@@ -8,10 +8,11 @@
 
 class noncopyable{
 protected:
-    noncopyable() = default;
-    ~noncopyable() = default;
+    noncopyable(){}
+    ~noncopyable(){}
 
-public:
-    noncopyable(const noncopyable&) = delete;
-    const noncopyable& operator=(const noncopyable&) = delete;
+private:
+    noncopyable(const noncopyable&);
+    const noncopyable& operator=(const noncopyable&);
+    
 };

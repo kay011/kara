@@ -22,6 +22,8 @@ AppendFile::AppendFile(string filename) : fp_(fopen(filename.c_str(), "ae")){
 AppendFile::~AppendFile(){ fclose(fp_);}
 
 void AppendFile::append(const char* logline, const size_t len){
+    
+    
     size_t n = this -> write(logline, len);
     size_t remain = len - n;
     while(remain > 0){

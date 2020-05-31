@@ -61,7 +61,8 @@ struct ThreadData{
         CurrentThread::t_threadName = name_.empty() ? "Thread" : name_.c_str();
         prctl(PR_SET_NAME, CurrentThread::t_threadName);
 
-        func_();
+        func_();  // 线程执行函数
+
         CurrentThread::t_threadName = "finished";
 
     }
@@ -74,10 +75,10 @@ void* startThread(void* obj){
 
     delete data;
     return NULL;
-
-
 }
 
+
+// 成员变量
 Thread::Thread(const ThreadFunc& func, const string& n)
     : started_(false),
       joined_(false),
@@ -110,7 +111,9 @@ void Thread::start(){
     assert(!started_);
     started_ = true;
     ThreadData* data = new ThreadData(func_, name_, &tid_, &latch_);
-
+    // pthread_create是一个线程阻塞的函数，调用它的函数将一直
+    // 等待到被等待的线程结束为止，当函数返回时，被等待线程的资源被收回。
+    // 如果执行成功则返回0， 如果失败则返回一个错误号。
     if(pthread_create(&pthreadId_, NULL, &startThread, data)){
         started_ = false;
         delete data;

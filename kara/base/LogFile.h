@@ -15,12 +15,13 @@
 class LogFile : noncopyable{
 
 public:
+    // 每被append flushEveryN次，flush一下，会往文件写，只不过，文件也是带缓冲区的
     LogFile(const std::string& basename, int flushEveryN = 1024);
     ~LogFile() = default;
 
     void append(const char* logline, int len);
     void flush();
-    bool rollFile();
+    bool rollFile();   // 日志回滚 TODO
 
 private:
     void append_unlocked(const char* logline, int len);

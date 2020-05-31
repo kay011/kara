@@ -32,7 +32,7 @@ private:
     bool started_;
     bool joined_;
     pthread_t pthreadId_;
-    pid_t tid_;
+    pid_t tid_;   // 进程id
     ThreadFunc func_;
     std::string name_;
     CountDownLatch latch_;
