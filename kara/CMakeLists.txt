@@ -1,5 +1,7 @@
 set(SRCS 
-    Main.cpp 
+    Main.cpp
+    Timer.cpp 
+    Util.cpp 
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/base)
