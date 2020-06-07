@@ -1,0 +1,117 @@
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/7
+ */
+
+#include "EventLoop.h"
+#include <sys/epoll.h>
+#include <sys/eventfd.h>  // 新的系统调用
+#include <iostream>
+#include "Util.h"
+#include "base/Logging.h"
+
+using namespace std;
+
+// 线程局部变量
+__thread EventLoop* t_loopInThisThread = 0;
+
+int createEventfd(){
+    // eventfd API
+    // (1). 用来实现用户态进程(线程)间的等待/通知(wait/notify)机制
+    // (2). 内核用来通知用户态应用程序某个事件的发生。
+    int evtfd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if(evtfd < 0){
+        LOG << "Failed in eventfd";
+        abort();
+    }
+    return evtfd;
+}
+
+EventLoop::EventLoop() : looping_(false),
+    poller_(new Epoll()),
+    wakeUpFd_(createEventfd()),
+    quit_(false),
+    eventHanding_(false),
+    callingPendingFunctors_(false),
+    threadId_(CurrentThread::tid()),
+    pwakeupChannel_(new Channel(this, wakeUpFd_))
+{
+  if(!t_loopInThisThread){
+      t_loopInThisThread = this;
+  }
+
+  pwakeupChannel_ -> setEvents(EPOLLIN | EPOLLET);
+  pwakeupChannel_ -> setReadHandler(bind(&EventLoop::handleRead, this));
+  pwakeupChannel_ -> setConnHandler(bind(&EventLoop::handleConn, this));
+  poller_ -> epoll_add(pwakeupChannel_, 0);
+}
+
+EventLoop::~EventLoop(){
+    close(wakeUpFd_);
+    t_loopInThisThread = NULL;
+}
+
+void EventLoop::wakeup(){
+    uint64_t one = 1;
+    ssize_t n = writen(wakeUpFd_, (char*)(&one), sizeof(one));
+    if(n != sizeof(one)){
+        LOG << "EventLoop::wakeup() writes " << n << "bytes instead of 8";
+    }
+}
+
+void EventLoop::handleRead(){
+    uint64_t one = 1;
+    ssize_t n = readn(wakeUpFd_, &one, sizeof(one));
+    if(n != sizeof(one)){
+        LOG << "EventLoop::handleRead() reads " << n << "bytes instead of 8";
+    }
+    pwakeupChannel_ -> setEvents(EPOLLIN | EPOLLET);
+}
+
+void EventLoop::runInLoop(Functor&& cb){
+    if(isInLoopThread){
+        cb();
+    }
+    else
+    {
+        queueInLoop(std::move(cb));
+    }
+    
+}
+void EventLoop::loop(){
+    assert(!looping_);
+    assert(isInLoopThread());
+
+    looping_ = true;
+    quit_ = false;
+
+    std::vector<SP_Channel> ret;
+    while(!quit_){
+        ret.clear();
+        ret = poller_ -> poll();
+        eventHanding_ = true;
+        for(auto& it : ret) it -> handleEvents();
+        eventHanding_ = false;
+        doPendingFunctors();
+        poller_ -> handleExpired();
+    }
+    looping_ = false;
+}
+void EventLoop::doPendingFunctors(){
+    vector<Functor> functors;
+    callingPendingFunctors_ = true;
+
+    {
+        MutexLockGuard lock(mutex_);
+        functors.swap(pendingFunctors_);
+    }
+    for(size_t i = 0; i < functors.size(); ++i) functors[i]();
+    callingPendingFunctors_ = false;
+}
+void EventLoop::quit() {
+  quit_ = true;
+  if (!isInLoopThread()) {
+    wakeup();
+  }
+}
