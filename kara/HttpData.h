@@ -30,7 +30,7 @@ enum ProcessState{
 enum URIState{
     PARSE_URI_AGAIN = 1,
     PARSE_URI_ERROR,
-    PARSE__URI_SUCCESS
+    PARSE_URI_SUCCESS
 };
 
 enum HeaderState{
