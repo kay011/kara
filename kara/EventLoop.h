@@ -27,22 +27,22 @@ public:
     void queueInLoop(Functor&& cb);
     bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); }
     void assertInLoopThread() {assert(isInLoopThread()); };
-    void shutdown(shared_ptr<Channel> channel){
+    void shutdown(std::shared_ptr<Channel> channel){
         shotDownWR(channel -> getFd());
     }
-    void removeFromPoller(shared_ptr<Channel> channel){
+    void removeFromPoller(std::shared_ptr<Channel> channel){
         poller_ -> epoll_del(channel);
     }
-    void updatePoller(shared_ptr<Channel> channel, int timeout = 0){
+    void updatePoller(std::shared_ptr<Channel> channel, int timeout = 0){
         poller_ -> epoll_mod(channel, timeout);
     }
-    void addToPoller(shared_ptr<Channel> channel, int timeout = 0){
+    void addToPoller(std::shared_ptr<Channel> channel, int timeout = 0){
         poller_ -> epoll_add(channel, timeout);
     }
 
 private:
     bool looping_;
-    shared_ptr<Epoll> poller_;
+    std::shared_ptr<Epoll> poller_;
     int wakeUpFd_;
     bool quit_;
     bool eventHanding_;
@@ -50,7 +50,7 @@ private:
     std::vector<Functor> pendingFunctors_;
     bool callingPendingFunctors_;
     const pid_t threadId_;
-    shared_ptr<Channel> pwakeupChannel_;
+    std::shared_ptr<Channel> pwakeupChannel_;
 
     void wakeup();
     void handleRead();

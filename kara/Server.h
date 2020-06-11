@@ -19,7 +19,7 @@ public:
     void handNewConn();
     void hanThisConn(){ loop_ -> updatePoller(acceptChannel_); }
 
-public:
+private:
     EventLoop* loop_;
     int threadNum_;
     std::unique_ptr<EventLoopThreadPool> EventLoopThreadPool_;
@@ -28,4 +28,4 @@ public:
     int port_;
     int listenfd_;
     static const int MAXFDS = 100000;
-}
+};

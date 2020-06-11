@@ -28,7 +28,8 @@ int createEventfd(){
     return evtfd;
 }
 
-EventLoop::EventLoop() : looping_(false),
+EventLoop::EventLoop() : 
+    looping_(false),
     poller_(new Epoll()),
     wakeUpFd_(createEventfd()),
     quit_(false),
@@ -47,6 +48,9 @@ EventLoop::EventLoop() : looping_(false),
   poller_ -> epoll_add(pwakeupChannel_, 0);
 }
 
+void EventLoop::handleConn(){
+    updatePoller(pwakeupChannel_, 0);
+}
 EventLoop::~EventLoop(){
     close(wakeUpFd_);
     t_loopInThisThread = NULL;
@@ -70,7 +74,7 @@ void EventLoop::handleRead(){
 }
 
 void EventLoop::runInLoop(Functor&& cb){
-    if(isInLoopThread){
+    if(isInLoopThread()){
         cb();
     }
     else
@@ -78,6 +82,15 @@ void EventLoop::runInLoop(Functor&& cb){
         queueInLoop(std::move(cb));
     }
     
+}
+void EventLoop::queueInLoop(Functor&& cb){
+    {
+        MutexLockGuard lock(mutex_);
+        pendingFunctors_.emplace_back(std::move(cb));
+    }
+    if(isInLoopThread() || callingPendingFunctors_){
+        wakeup();
+    }
 }
 void EventLoop::loop(){
     assert(!looping_);

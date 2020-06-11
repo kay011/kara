@@ -1,7 +1,15 @@
 set(SRCS 
+    Channel.cpp 
+    Epoll.cpp 
+    EventLoop.cpp 
+    EventLoopThread.cpp 
+    EventLoopThreadPool.cpp 
+    HttpData.cpp 
     Main.cpp
+    Server.cpp 
     Timer.cpp 
     Util.cpp 
+    
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/base)

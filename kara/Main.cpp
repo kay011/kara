@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 {
     int threadNum = 4;
     int port = 80;
-    std::string logPath = "./WebServer.log";
+    std::string logPath = "./KaraServer.log";
     int opt;
     const char* str = "t:l:p:";
     while((opt = getopt(argc, argv, str)) != -1){
@@ -41,9 +41,6 @@ int main(int argc, char *argv[])
         }
     }
     Logger::setLogFileName(logPath);
-#ifndef _PTHREADS
-    LOG << "_PTHREADS is not defined!";
-#endif
     EventLoop mainLoop;
     Server myHttpServer(&mainLoop, threadNum, port);
     myHttpServer.start();

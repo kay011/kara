@@ -22,7 +22,7 @@ TimerNode::~TimerNode(){
     } 
 }
 
-TimerNode::TimerNode(TimerNode& tn) : SPHttpData(tn.SPHttpData), expiredTime_(0){
+TimerNode::TimerNode(TimerNode& tn) :  expiredTime_(0), SPHttpData(tn.SPHttpData){
 
 }
 
