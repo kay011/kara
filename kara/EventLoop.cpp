@@ -1,135 +1,126 @@
-/**
- * @Author Karate Yuan
- * @Email haodong_yuan@163.com
- * @Date: 2020/6/7
- */
-
+// @Author Lin Ya
+// @Email xxbbb@vip.qq.com
 #include "EventLoop.h"
-#include <sys/epoll.h>
-#include <sys/eventfd.h>  // 新的系统调用
-#include <iostream>
 #include "Util.h"
 #include "base/Logging.h"
+#include <iostream>
+#include <sys/epoll.h>
+#include <sys/eventfd.h>
 
 using namespace std;
 
-// 线程局部变量
-// thread_local?? 每个线程一个EventLoop
-__thread EventLoop* t_loopInThisThread = 0;
+__thread EventLoop *t_loopInThisThread = 0;
 
-int createEventfd(){
-    // eventfd API
-    // (1). 用来实现用户态进程(线程)间的等待/通知(wait/notify)机制
-    // (2). 内核用来通知用户态应用程序某个事件的发生。
-    // 创建一个eventfd对象，或者说打开一个eventfd的文件，类似普通文件的open操作。
-    // 该对象是内核维护的无符号的64位整型计数器。初始化未initval的值。
-    // flags 可以以下三个标志位的OR结果。
-    // EFD_CLOEXEC: FD_CLOEXEC, 简单说就是fork子进程不继承，对于多线程的程序设计上这个值不会有错的。
-    // EFD_NONBLOCK: 文件被设置成O_NONBLOCK，一般也要设置
-    // EFD_SEMAPHORE: 支持semophore语义的read，简单说就值递减1。
-    int evtfd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
-    if(evtfd < 0){
-        LOG << "Failed in eventfd";
-        abort();
-    }
-    return evtfd;
+int createEventfd() {
+  int evtfd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+  if (evtfd < 0) {
+    LOG << "Failed in eventfd";
+    abort();
+  }
+  return evtfd;
 }
 
-EventLoop::EventLoop() : 
-    looping_(false),
-    poller_(new Epoll()),
-    wakeUpFd_(createEventfd()),
-    quit_(false),
-    eventHanding_(false),
-    callingPendingFunctors_(false),
-    threadId_(CurrentThread::tid()),
-    pwakeupChannel_(new Channel(this, wakeUpFd_))
-{
-  if(!t_loopInThisThread){
-      t_loopInThisThread = this;
+EventLoop::EventLoop()
+    : looping_(false), poller_(new Epoll()), wakeupFd_(createEventfd()),
+      quit_(false), eventHandling_(false), callingPendingFunctors_(false),
+      threadId_(CurrentThread::tid()),
+      pwakeupChannel_(new Channel(this, wakeupFd_)) {
+  if (t_loopInThisThread) {
+    // LOG << "Another EventLoop " << t_loopInThisThread << " exists in this
+    // thread " << threadId_;
+  } else {
+    t_loopInThisThread = this;
+  }
+  // pwakeupChannel_->setEvents(EPOLLIN | EPOLLET | EPOLLONESHOT);
+  pwakeupChannel_->setEvents(EPOLLIN | EPOLLET);
+  pwakeupChannel_->setReadHandler(bind(&EventLoop::handleRead, this));
+  pwakeupChannel_->setConnHandler(bind(&EventLoop::handleConn, this));
+  poller_->epoll_add(pwakeupChannel_, 0);
+}
+
+void EventLoop::handleConn() {
+  // poller_->epoll_mod(wakeupFd_, pwakeupChannel_, (EPOLLIN | EPOLLET |
+  // EPOLLONESHOT), 0);
+  updatePoller(pwakeupChannel_, 0);
+}
+
+EventLoop::~EventLoop() {
+  // wakeupChannel_->disableAll();
+  // wakeupChannel_->remove();
+  close(wakeupFd_);
+  t_loopInThisThread = NULL;
+}
+
+void EventLoop::wakeup() {
+  uint64_t one = 1;
+  ssize_t n = writen(wakeupFd_, (char *)(&one), sizeof one);
+  if (n != sizeof one) {
+    LOG << "EventLoop::wakeup() writes " << n << " bytes instead of 8";
+  }
+}
+
+void EventLoop::handleRead() {
+  uint64_t one = 1;
+  ssize_t n = readn(wakeupFd_, &one, sizeof one);
+  if (n != sizeof one) {
+    LOG << "EventLoop::handleRead() reads " << n << " bytes instead of 8";
+  }
+  // pwakeupChannel_->setEvents(EPOLLIN | EPOLLET | EPOLLONESHOT);
+  pwakeupChannel_->setEvents(EPOLLIN | EPOLLET);
+}
+
+void EventLoop::runInLoop(Functor &&cb) {
+  if (isInLoopThread())
+    cb();
+  else
+    queueInLoop(std::move(cb));
+}
+
+void EventLoop::queueInLoop(Functor &&cb) {
+  {
+    MutexLockGuard lock(mutex_);
+    pendingFunctors_.emplace_back(std::move(cb));
   }
 
-  pwakeupChannel_ -> setEvents(EPOLLIN | EPOLLET);
-  pwakeupChannel_ -> setReadHandler(bind(&EventLoop::handleRead, this));  // 注意 与 之前看的 acceptChannel的区别
-  pwakeupChannel_ -> setConnHandler(bind(&EventLoop::handleConn, this));
-  poller_ -> epoll_add(pwakeupChannel_, 0);
+  if (!isInLoopThread() || callingPendingFunctors_)
+    wakeup();
 }
 
-void EventLoop::handleConn(){
-    updatePoller(pwakeupChannel_, 0);
-}
-EventLoop::~EventLoop(){
-    close(wakeUpFd_);
-    t_loopInThisThread = NULL;
-}
-
-void EventLoop::wakeup(){
-    uint64_t one = 1;
-    ssize_t n = writen(wakeUpFd_, (char*)(&one), sizeof(one));
-    if(n != sizeof(one)){
-        LOG << "EventLoop::wakeup() writes " << n << "bytes instead of 8";
-    }
-}
-
-void EventLoop::handleRead(){
-    uint64_t one = 1;
-    ssize_t n = readn(wakeUpFd_, &one, sizeof(one));
-    if(n != sizeof(one)){
-        LOG << "EventLoop::handleRead() reads " << n << "bytes instead of 8";
-    }
-    pwakeupChannel_ -> setEvents(EPOLLIN | EPOLLET);
+void EventLoop::loop() {
+  assert(!looping_);
+  assert(isInLoopThread());
+  looping_ = true;
+  quit_ = false;
+  // LOG_TRACE << "EventLoop " << this << " start looping";
+  std::vector<SP_Channel> ret;
+  while (!quit_) {
+    // cout << "doing" << endl;
+    ret.clear();
+    ret = poller_->poll();
+    eventHandling_ = true;
+    for (auto &it : ret)
+      it->handleEvents();
+    eventHandling_ = false;
+    doPendingFunctors();
+    poller_->handleExpired();
+  }
+  looping_ = false;
 }
 
-void EventLoop::runInLoop(Functor&& cb){
-    if(isInLoopThread()){
-        cb();
-    }
-    else
-    {
-        queueInLoop(std::move(cb));
-    }
-    
-}
-void EventLoop::queueInLoop(Functor&& cb){
-    {
-        MutexLockGuard lock(mutex_);
-        pendingFunctors_.emplace_back(std::move(cb));
-    }
-    if(isInLoopThread() || callingPendingFunctors_){
-        wakeup();
-    }
-}
-void EventLoop::loop(){
-    assert(!looping_);
-    assert(isInLoopThread());
+void EventLoop::doPendingFunctors() {
+  std::vector<Functor> functors;
+  callingPendingFunctors_ = true;
 
-    looping_ = true;
-    quit_ = false;
+  {
+    MutexLockGuard lock(mutex_);
+    functors.swap(pendingFunctors_);
+  }
 
-    std::vector<SP_Channel> ret;
-    while(!quit_){
-        ret.clear();
-        // 返回活跃事件的Channel
-        ret = poller_ -> poll();
-        eventHanding_ = true;
-        for(auto& it : ret) it -> handleEvents();  // 根据
-        eventHanding_ = false;
-        doPendingFunctors();
-        poller_ -> handleExpired();
-    }
-    looping_ = false;
+  for (size_t i = 0; i < functors.size(); ++i)
+    functors[i]();
+  callingPendingFunctors_ = false;
 }
-void EventLoop::doPendingFunctors(){
-    vector<Functor> functors;
-    callingPendingFunctors_ = true;
 
-    {
-        MutexLockGuard lock(mutex_);
-        functors.swap(pendingFunctors_);
-    }
-    for(size_t i = 0; i < functors.size(); ++i) functors[i]();
-    callingPendingFunctors_ = false;
-}
 void EventLoop::quit() {
   quit_ = true;
   if (!isInLoopThread()) {

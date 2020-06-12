@@ -16,7 +16,7 @@ public:
     MutexLock(){ pthread_mutex_init(&mutex, NULL); }
     ~MutexLock(){
         // 为什么销毁前要加锁？
-        pthread_mutex_lock(&mutex);
+        // pthread_mutex_lock(&mutex);
         pthread_mutex_destroy(&mutex);
     }
 

@@ -1,51 +1,43 @@
-/**
- * @Author Karate Yuan
- * @Email haodong_yuan@163.com
- * @Date: 2020/6/7
- */
+// @Author Lin Ya
+// @Email xxbbb@vip.qq.com
+#include "EventLoopThread.h"
+#include <functional>
 
- #include "EventLoopThread.h"
- #include <functional>
+EventLoopThread::EventLoopThread()
+    : loop_(NULL), exiting_(false),
+      thread_(bind(&EventLoopThread::threadFunc, this), "EventLoopThread"),
+      mutex_(), cond_(mutex_) {}
 
- EventLoopThread::EventLoopThread() 
-    : loop_(NULL),
-      exiting_(false),
-      thread_(std::bind(&EventLoopThread::threadFunc, this), "ThreadLoopThread"),
-      mutex_(),
-      cond_(mutex_)
-{}
-
-EventLoopThread::~EventLoopThread(){
-    exiting_ = true;
-    if(loop_ != NULL){
-        loop_ -> quit();
-        thread_.join();
-    }
+EventLoopThread::~EventLoopThread() {
+  exiting_ = true;
+  if (loop_ != NULL) {
+    loop_->quit();
+    thread_.join();
+  }
 }
 
-EventLoop* EventLoopThread::startLoop(){
-    assert(!thread_.started());
-    thread_.start();
-    // 临界区
-    {
-        MutexLockGuard lock(mutex_);
-        while(loop_ == NULL){
-            cond_.wait();
-        }
-    }
-    // loop要交给线程池的
-    return loop_;
+EventLoop *EventLoopThread::startLoop() {
+  assert(!thread_.started());
+  thread_.start();
+  {
+    MutexLockGuard lock(mutex_);
+    // 一直等到threadFun在Thread里真正跑起来
+    while (loop_ == NULL)
+      cond_.wait();
+  }
+  return loop_;
 }
 
-void EventLoopThread::threadFunc(){
-    EventLoop loop;
-    {
-        MutexLockGuard lock(mutex_);
-        loop_ = &loop;
-        cond_.notify();
-    }
-    loop.loop();
-    loop_ = NULL;
+void EventLoopThread::threadFunc() {
+  EventLoop loop;
 
+  {
+    MutexLockGuard lock(mutex_);
+    loop_ = &loop;
+    cond_.notify();
+  }
+
+  loop.loop();
+  // assert(exiting_);
+  loop_ = NULL;
 }
-

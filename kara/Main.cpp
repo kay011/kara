@@ -1,49 +1,50 @@
 /**
  * @Author Karate Yuan
  * @Email haodong_yuan@163.com
- * @Date: 2020/6/7
+ * @Date: 2020/6/12
  */
-#include <getopt.h>
-#include <string>
+
 #include "EventLoop.h"
 #include "Server.h"
 #include "base/Logging.h"
+#include <getopt.h>
+#include <string>
 
-int main(int argc, char *argv[])
-{
-    int threadNum = 4;
-    int port = 8067;
-    std::string logPath = "./KaraServer.log";
-    int opt;
-    const char* str = "t:l:p:";
-    while((opt = getopt(argc, argv, str)) != -1){
-        switch (opt)
-        {
-        case 't': {
-            threadNum = atoi(optarg);
-            break;
-        }
-            
-        case 'l': {
-            logPath = optarg;
-            if(logPath.size() < 2 ||  optarg[0] != '/'){
-                printf("logpath should start with \"/\" \n");
-                abort();
-            }
-        }
-        case 'p': {
-            port = atoi(optarg);
-            break;
-        }
+int main(int argc, char *argv[]) {
+  int threadNum = 4;
+  int port = 8088;
+  std::string logPath = "./KaraServer.log";
 
-        default:
-            break;
-        }
+  // parse args
+  int opt;
+  // 冒号表示 -t 后面必须带有参数
+  const char *str = "t:l:p:";
+  while ((opt = getopt(argc, argv, str)) != -1) {
+    switch (opt) {
+    case 't': {
+      threadNum = atoi(optarg);
+      break;
     }
-    Logger::setLogFileName(logPath);
-    EventLoop mainLoop;
-    Server myHttpServer(&mainLoop, threadNum, port);
-    myHttpServer.start();
-    mainLoop.loop();
-    return 0;
+    case 'l': {
+      logPath = optarg;
+      if (logPath.size() < 2 || optarg[0] != '/') {
+        printf("logPath should start with \"/\"\n");
+        abort();
+      }
+      break;
+    }
+    case 'p': {
+      port = atoi(optarg);
+      break;
+    }
+    default:
+      break;
+    }
+  }
+  Logger::setLogFileName(logPath);
+  EventLoop mainLoop;
+  Server myHTTPServer(&mainLoop, threadNum, port);
+  myHTTPServer.start();
+  mainLoop.loop();
+  return 0;
 }

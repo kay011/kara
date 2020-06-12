@@ -1,28 +1,26 @@
-/**
- * @Author Karate Yuan
- * @Email haodong_yuan@163.com
- * @Date: 2020/6/7
- */
-
+// @Author Lin Ya
+// @Email xxbbb@vip.qq.com
 #pragma once
-#include <memory>
-#include <vector>
 #include "EventLoopThread.h"
 #include "base/Logging.h"
 #include "base/noncopyable.h"
+#include <memory>
+#include <vector>
 
-class EventLoopThreadPool : noncopyable{
+class EventLoopThreadPool : noncopyable {
 public:
-    EventLoopThreadPool(EventLoop* baseLoop, int numThreads);
-    ~EventLoopThreadPool(){ LOG << "~EventLoopThreadPool()"; }
+  EventLoopThreadPool(EventLoop *baseLoop, int numThreads);
 
-    void start();
-    EventLoop* getNextLoop();
+  ~EventLoopThreadPool() { LOG << "~EventLoopThreadPool()"; }
+  void start();
+
+  EventLoop *getNextLoop();
+
 private:
-    EventLoop* baseLoop_;  // 有一个baseLoop_
-    bool started_;
-    int numThreads_;
-    int next_;
-    std::vector<std::shared_ptr<EventLoopThread>> threads_; // 这里放的不是普通的线程，而是只跑eventLoop的线程
-    std::vector<EventLoop*> loops_;  // 一堆EventLoop，相当于Task 
+  EventLoop *baseLoop_;
+  bool started_;
+  int numThreads_;
+  int next_;
+  std::vector<std::shared_ptr<EventLoopThread>> threads_;
+  std::vector<EventLoop *> loops_;
 };
