@@ -8,4 +8,4 @@ os:
 install:
   - sudo apt-get install cmake
 script:
-  - sudo ./build.sh
+  - ./build.sh

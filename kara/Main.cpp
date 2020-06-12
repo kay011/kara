@@ -10,7 +10,6 @@
 #include "Server.h"
 #include "base/Logging.h"
 
-
 int main(int argc, char *argv[]) {
   int threadNum = 4;
   int port = 8088;
