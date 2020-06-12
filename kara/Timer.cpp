@@ -5,9 +5,9 @@
  */
 
 #include "Timer.h"
-#include <queue>
 #include <sys/time.h>
 #include <unistd.h>
+#include <queue>
 
 TimerNode::TimerNode(std::shared_ptr<HttpData> requestData, int timeout)
     : deleted_(false), SPHttpData(requestData) {
@@ -19,12 +19,11 @@ TimerNode::TimerNode(std::shared_ptr<HttpData> requestData, int timeout)
 }
 
 TimerNode::~TimerNode() {
-  if (SPHttpData)
-    SPHttpData->handleClose();
+  if (SPHttpData) SPHttpData->handleClose();
 }
 
 TimerNode::TimerNode(TimerNode &tn)
-    : SPHttpData(tn.SPHttpData), expiredTime_(0) {}
+    : expiredTime_(0), SPHttpData(tn.SPHttpData) {}
 
 void TimerNode::update(int timeout) {
   struct timeval now;
