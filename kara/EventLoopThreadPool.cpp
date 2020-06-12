@@ -5,7 +5,7 @@
  */
 
 #include "EventLoopThreadPool.h"
-
+// 主 baseLoop， 负责监听
 EventLoopThreadPool::EventLoopThreadPool(EventLoop *baseLoop, int numThreads)
     : baseLoop_(baseLoop), started_(false), numThreads_(numThreads), next_(0)
 {
@@ -16,7 +16,7 @@ EventLoopThreadPool::EventLoopThreadPool(EventLoop *baseLoop, int numThreads)
 }
 
 void EventLoopThreadPool::start(){
-    baseLoop_ -> assertInLoopThread();
+    baseLoop_ -> assertInLoopThread();  // 每个线程都有自己的tid()
     started_ = true;
     for(int i = 0; i < numThreads_; ++i){
         std::shared_ptr<EventLoopThread> t(new EventLoopThread());

@@ -32,9 +32,9 @@ public:
 private:
     static const int MAXFDS = 100000;
     int epollFd_;
-    std::vector<epoll_event> events_;
+    std::vector<epoll_event> events_;  // 事件数组
 
-    std::shared_ptr<Channel> fd2chan_[MAXFDS];
-    std::shared_ptr<HttpData> fd2http_[MAXFDS];
+    std::shared_ptr<Channel> fd2chan_[MAXFDS];  // 该fd对应的channel数组
+    std::shared_ptr<HttpData> fd2http_[MAXFDS]; // 该fd对应的httpdata数组
     TimerManager timerMannager_;
 };

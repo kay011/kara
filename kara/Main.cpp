@@ -12,7 +12,7 @@
 int main(int argc, char *argv[])
 {
     int threadNum = 4;
-    int port = 80;
+    int port = 8067;
     std::string logPath = "./KaraServer.log";
     int opt;
     const char* str = "t:l:p:";

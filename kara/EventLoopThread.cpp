@@ -26,18 +26,19 @@ EventLoopThread::~EventLoopThread(){
 EventLoop* EventLoopThread::startLoop(){
     assert(!thread_.started());
     thread_.start();
+    // 临界区
     {
         MutexLockGuard lock(mutex_);
         while(loop_ == NULL){
             cond_.wait();
         }
     }
+    // loop要交给线程池的
     return loop_;
 }
 
 void EventLoopThread::threadFunc(){
     EventLoop loop;
-
     {
         MutexLockGuard lock(mutex_);
         loop_ = &loop;

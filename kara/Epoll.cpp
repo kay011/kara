@@ -39,8 +39,9 @@ void Epoll::epoll_add(SP_Channel request, int timeout){
     event.data.fd = fd;
     event.events = request -> getEvents();
 
-    request -> EqualAndUpdateLastEvents();
+    request -> EqualAndUpdateLastEvents(); // 有啥用呢？
     fd2chan_[fd] = request;
+    // 第四个参数是告诉内核需要监听什么事件，是一个结构体
     if(epoll_ctl(epollFd_, EPOLL_CTL_ADD, fd, &event) < 0){
         perror("epoll_add error");
         fd2chan_[fd].reset(); 
@@ -67,6 +68,7 @@ void Epoll::epoll_del(SP_Channel request){
     int fd = request->getFd();
     struct epoll_event event;
     event.data.fd = fd;
+    // 这里？
     event.events = request->getLastEvents();
     // event.events = 0;
     // request->EqualAndUpdateLastEvents()
@@ -77,7 +79,7 @@ void Epoll::epoll_del(SP_Channel request){
     fd2http_[fd].reset();
 }
 
-// 返回活跃事件数
+// 返回活跃事件给谁呢，给eventLoop
 std::vector<SP_Channel> Epoll::poll(){
     while(true){
         int event_count = epoll_wait(epollFd_, &*events_.begin(), events_.size(), EPOLLWAIT_TIME);
@@ -93,7 +95,7 @@ std::vector<SP_Channel> Epoll::poll(){
 
 void Epoll::handleExpired(){ timerMannager_.handleExpiredEvent(); }
 
-// 分发处理函数
+// 这里将不同的fd分发给不同的channel
 std::vector<SP_Channel> Epoll::getEventsRequest(int events_num){
     std::vector<SP_Channel> req_data;
     for(int i = 0; i < events_num; ++i){

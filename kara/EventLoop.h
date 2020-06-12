@@ -21,14 +21,14 @@ public:
     EventLoop();
     ~EventLoop();
 
-    void loop();
+    void loop();  // 核心
     void quit();
     void runInLoop(Functor&& cb);
     void queueInLoop(Functor&& cb);
-    bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); }
-    void assertInLoopThread() {assert(isInLoopThread()); };
+    bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); } // 判断
+    void assertInLoopThread() { assert(isInLoopThread()); };
     void shutdown(std::shared_ptr<Channel> channel){
-        shotDownWR(channel -> getFd());
+        shutDownWR(channel -> getFd());
     }
     void removeFromPoller(std::shared_ptr<Channel> channel){
         poller_ -> epoll_del(channel);
@@ -41,16 +41,16 @@ public:
     }
 
 private:
-    bool looping_;
-    std::shared_ptr<Epoll> poller_;
-    int wakeUpFd_;
+    bool looping_;  // automic
+    std::shared_ptr<Epoll> poller_;  // 持有一个IO复用器
+    int wakeUpFd_;   // 异步唤醒线程的fd??
     bool quit_;
     bool eventHanding_;
     mutable MutexLock mutex_;
     std::vector<Functor> pendingFunctors_;
     bool callingPendingFunctors_;
-    const pid_t threadId_;
-    std::shared_ptr<Channel> pwakeupChannel_;
+    const pid_t threadId_;  // 每个线程都持有一个 eventloop对象
+    std::shared_ptr<Channel> pwakeupChannel_;   // 特殊的channel？ 哪里特殊 fd特殊
 
     void wakeup();
     void handleRead();

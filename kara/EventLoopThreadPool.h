@@ -19,10 +19,10 @@ public:
     void start();
     EventLoop* getNextLoop();
 private:
-    EventLoop* baseLoop_;
+    EventLoop* baseLoop_;  // 有一个baseLoop_
     bool started_;
     int numThreads_;
     int next_;
-    std::vector<std::shared_ptr<EventLoopThread>> threads_;
-    std::vector<EventLoop*> loops_;   
+    std::vector<std::shared_ptr<EventLoopThread>> threads_; // 这里放的不是普通的线程，而是只跑eventLoop的线程
+    std::vector<EventLoop*> loops_;  // 一堆EventLoop，相当于Task 
 };

@@ -11,6 +11,8 @@
 #include "base/Thread.h"
 #include "base/noncopyable.h"
 
+// 普通线程的二次封装
+// 功能 跑一个EventLoop
 class EventLoopThread : noncopyable{
 public:
     EventLoopThread();

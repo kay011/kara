@@ -21,7 +21,7 @@ Server::Server(EventLoop* loop, int threadNum, int port)
       port_(port),
       listenfd_(socket_bind_listen(port_))
 {
-    acceptChannel_ -> setFd(listenfd_);
+    acceptChannel_ -> setFd(listenfd_);  // 关联fd_
     handle_for_sigpipe();
     if(setSocketNonBlocking(listenfd_) < 0){
         perror("set socket non block failed");
@@ -34,8 +34,9 @@ void Server::start(){
     EventLoopThreadPool_ -> start();
     acceptChannel_ -> setEvents(EPOLLIN | EPOLLET);
     acceptChannel_ -> setReadHandler(std::bind(&Server::handNewConn, this));
-    acceptChannel_ -> setConnHandler(std::bind(&Server::hanThisConn, this));
-    loop_ -> addToPoller(acceptChannel_, 0);
+    acceptChannel_ -> setConnHandler(std::bind(&Server::handThisConn, this));
+    // 把acceptChannel_关联的fd_ 交给 poll管理
+    loop_ -> addToPoller(acceptChannel_, 0);  // accpetChannel_ 关联了listenfd_
     started_ = true;
 }
 
@@ -47,6 +48,7 @@ void Server::handNewConn(){
     int accept_fd = 0;
 
     while((accept_fd = accept(listenfd_, (struct sockaddr*)&client_addr, &client_addr_len)) > 0){
+        // 每 得到一个accept_fd, 从线程池取出一个线程? 不，取出一个EventLoop
         EventLoop *loop = EventLoopThreadPool_ -> getNextLoop();
         LOG << "New Connection from " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port);
         
@@ -62,12 +64,14 @@ void Server::handNewConn(){
         }
         setSocketNodelay(accept_fd);
 
+        // 创建一个HttpData
         std::shared_ptr<HttpData> req_info(new HttpData(loop, accept_fd));
-
+        // 为新的连接 创建一个新的channel, 这个channel对象的持有是该HttpData
         req_info -> getChannel() -> setHolder(req_info);
+        // 把这个连接放入队列中？
+        
         loop -> queueInLoop(std::bind(&HttpData::newEvent, req_info));
 
     }
     acceptChannel_->setEvents(EPOLLIN | EPOLLET);
-
 }

@@ -20,7 +20,7 @@
 #include "CurrentThread.h"
 
 using namespace std;
-//TODO(Karate)
+
 
 namespace CurrentThread{
 __thread int t_cachedTid = 0;
@@ -30,6 +30,7 @@ __thread const char* t_threadName = "default";
 }
 
 pid_t gettid(){
+    // 通过系统调用得到tid，因为glibc没有实现gettid()函数
     return static_cast<pid_t>(::syscall(SYS_gettid));
 }
 

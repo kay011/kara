@@ -14,12 +14,19 @@
 using namespace std;
 
 // 线程局部变量
+// thread_local?? 每个线程一个EventLoop
 __thread EventLoop* t_loopInThisThread = 0;
 
 int createEventfd(){
     // eventfd API
     // (1). 用来实现用户态进程(线程)间的等待/通知(wait/notify)机制
     // (2). 内核用来通知用户态应用程序某个事件的发生。
+    // 创建一个eventfd对象，或者说打开一个eventfd的文件，类似普通文件的open操作。
+    // 该对象是内核维护的无符号的64位整型计数器。初始化未initval的值。
+    // flags 可以以下三个标志位的OR结果。
+    // EFD_CLOEXEC: FD_CLOEXEC, 简单说就是fork子进程不继承，对于多线程的程序设计上这个值不会有错的。
+    // EFD_NONBLOCK: 文件被设置成O_NONBLOCK，一般也要设置
+    // EFD_SEMAPHORE: 支持semophore语义的read，简单说就值递减1。
     int evtfd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if(evtfd < 0){
         LOG << "Failed in eventfd";
@@ -43,7 +50,7 @@ EventLoop::EventLoop() :
   }
 
   pwakeupChannel_ -> setEvents(EPOLLIN | EPOLLET);
-  pwakeupChannel_ -> setReadHandler(bind(&EventLoop::handleRead, this));
+  pwakeupChannel_ -> setReadHandler(bind(&EventLoop::handleRead, this));  // 注意 与 之前看的 acceptChannel的区别
   pwakeupChannel_ -> setConnHandler(bind(&EventLoop::handleConn, this));
   poller_ -> epoll_add(pwakeupChannel_, 0);
 }
@@ -102,9 +109,10 @@ void EventLoop::loop(){
     std::vector<SP_Channel> ret;
     while(!quit_){
         ret.clear();
+        // 返回活跃事件的Channel
         ret = poller_ -> poll();
         eventHanding_ = true;
-        for(auto& it : ret) it -> handleEvents();
+        for(auto& it : ret) it -> handleEvents();  // 根据
         eventHanding_ = false;
         doPendingFunctors();
         poller_ -> handleExpired();
