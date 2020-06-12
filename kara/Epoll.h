@@ -1,16 +1,20 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #pragma once
+#include <sys/epoll.h>
+#include <memory>
+#include <unordered_map>
+#include <vector>
 #include "Channel.h"
 #include "HttpData.h"
 #include "Timer.h"
-#include <memory>
-#include <sys/epoll.h>
-#include <unordered_map>
-#include <vector>
 
 class Epoll {
-public:
+ public:
   Epoll();
   ~Epoll();
   void epoll_add(SP_Channel request, int timeout);
@@ -22,7 +26,7 @@ public:
   int getEpollFd() { return epollFd_; }
   void handleExpired();
 
-private:
+ private:
   static const int MAXFDS = 100000;
   int epollFd_;
   std::vector<epoll_event> events_;

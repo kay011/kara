@@ -1,5 +1,9 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #include "EventLoop.h"
 #include "Util.h"
 #include "base/Logging.h"

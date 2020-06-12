@@ -1,19 +1,24 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #include "Epoll.h"
-#include "Util.h"
-#include "base/Logging.h"
+#include <arpa/inet.h>
 #include <assert.h>
-#include <deque>
 #include <errno.h>
 #include <netinet/in.h>
-#include <queue>
 #include <string.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-
-#include <arpa/inet.h>
+#include <deque>
 #include <iostream>
+#include <queue>
+#include "Util.h"
+#include "base/Logging.h"
+
+
 using namespace std;
 
 const int EVENTSNUM = 4096;
@@ -48,8 +53,7 @@ void Epoll::epoll_add(SP_Channel request, int timeout) {
 
 // 修改描述符状态
 void Epoll::epoll_mod(SP_Channel request, int timeout) {
-  if (timeout > 0)
-    add_timer(request, timeout);
+  if (timeout > 0) add_timer(request, timeout);
   int fd = request->getFd();
   if (!request->EqualAndUpdateLastEvents()) {
     struct epoll_event event;
@@ -82,11 +86,9 @@ std::vector<SP_Channel> Epoll::poll() {
   while (true) {
     int event_count =
         epoll_wait(epollFd_, &*events_.begin(), events_.size(), EPOLLWAIT_TIME);
-    if (event_count < 0)
-      perror("epoll wait error");
+    if (event_count < 0) perror("epoll wait error");
     std::vector<SP_Channel> req_data = getEventsRequest(event_count);
-    if (req_data.size() > 0)
-      return req_data;
+    if (req_data.size() > 0) return req_data;
   }
 }
 

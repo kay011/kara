@@ -1,14 +1,18 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #pragma once
+#include <memory>
+#include <vector>
 #include "EventLoopThread.h"
 #include "base/Logging.h"
 #include "base/noncopyable.h"
-#include <memory>
-#include <vector>
 
 class EventLoopThreadPool : noncopyable {
-public:
+ public:
   EventLoopThreadPool(EventLoop *baseLoop, int numThreads);
 
   ~EventLoopThreadPool() { LOG << "~EventLoopThreadPool()"; }
@@ -16,7 +20,7 @@ public:
 
   EventLoop *getNextLoop();
 
-private:
+ private:
   EventLoop *baseLoop_;
   bool started_;
   int numThreads_;

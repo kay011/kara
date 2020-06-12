@@ -6,43 +6,32 @@
 
 #pragma once
 
-
 #include <pthread.h>
 #include <cstdio>
 #include "noncopyable.h"
 
-class MutexLock : noncopyable{
-public:
-    MutexLock(){ pthread_mutex_init(&mutex, NULL); }
-    ~MutexLock(){
-        // 为什么销毁前要加锁？
-        // pthread_mutex_lock(&mutex);
-        pthread_mutex_destroy(&mutex);
-    }
+class MutexLock : noncopyable {
+ public:
+  MutexLock() { pthread_mutex_init(&mutex, NULL); }
+  ~MutexLock() {
+    // 为什么销毁前要加锁？
+    // pthread_mutex_lock(&mutex);
+    pthread_mutex_destroy(&mutex);
+  }
 
-    void lock(){ pthread_mutex_lock(&mutex); }
-    void unlock(){ pthread_mutex_unlock(&mutex); }
-    pthread_mutex_t* get(){ return &mutex; }
+  void lock() { pthread_mutex_lock(&mutex); }
+  void unlock() { pthread_mutex_unlock(&mutex); }
+  pthread_mutex_t *get() { return &mutex; }
 
-private:
-    pthread_mutex_t mutex;
-
-//private:
-    // 友元类不受访问权限影响
-    // friend class condition;
-
-
+ private:
+  pthread_mutex_t mutex;
 };
 
+class MutexLockGuard : noncopyable {
+ public:
+  explicit MutexLockGuard(MutexLock &_mutex) : mutex(_mutex) { mutex.lock(); }
+  ~MutexLockGuard() { mutex.unlock(); }
 
-
-class MutexLockGuard : noncopyable{
-public:
-    explicit MutexLockGuard(MutexLock &_mutex) : mutex(_mutex){ mutex.lock();}
-    ~MutexLockGuard(){
-        mutex.unlock();
-    }
-
-private:
-    MutexLock &mutex;
+ private:
+  MutexLock &mutex;
 };

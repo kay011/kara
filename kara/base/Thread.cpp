@@ -16,68 +16,65 @@
 
 #include <iostream>
 
-#include "Thread.h"
 #include "CurrentThread.h"
+#include "Thread.h"
 
 using namespace std;
 
-
-namespace CurrentThread{
+namespace CurrentThread {
 __thread int t_cachedTid = 0;
 __thread char t_tidString[32];
 __thread int t_tidStringLength = 6;
 __thread const char* t_threadName = "default";
 }
 
-pid_t gettid(){
-    // 通过系统调用得到tid，因为glibc没有实现gettid()函数
-    return static_cast<pid_t>(::syscall(SYS_gettid));
+pid_t gettid() {
+  // 通过系统调用得到tid，因为glibc没有实现gettid()函数
+  return static_cast<pid_t>(::syscall(SYS_gettid));
 }
 
-void CurrentThread::cacheTid(){
-    if(t_cachedTid == 0){
-        t_cachedTid = gettid();
-        t_tidStringLength = snprintf(t_tidString, sizeof(t_tidString), "%5d ", t_cachedTid);
-    }
+void CurrentThread::cacheTid() {
+  if (t_cachedTid == 0) {
+    t_cachedTid = gettid();
+    t_tidStringLength =
+        snprintf(t_tidString, sizeof(t_tidString), "%5d ", t_cachedTid);
+  }
 }
 
-struct ThreadData{
+struct ThreadData {
+  typedef Thread::ThreadFunc ThreadFunc;
+  ThreadFunc func_;
 
-    typedef Thread::ThreadFunc ThreadFunc;
-    ThreadFunc func_;
+  string name_;
+  pid_t* tid_;
+  CountDownLatch* latch_;
 
-    string name_;
-    pid_t* tid_;
-    CountDownLatch* latch_;
+  ThreadData(const ThreadFunc& func, const string& name, pid_t* tid,
+             CountDownLatch* latch)
+      : func_(func), name_(name), tid_(tid), latch_(latch) {}
 
-    ThreadData(const ThreadFunc& func, const string& name, pid_t* tid, CountDownLatch* latch)
-        : func_(func), name_(name), tid_(tid), latch_(latch){}
-    
-    void runInThread(){
-        *tid_ = CurrentThread::tid();
-        tid_ = NULL;
-        latch_ -> countDown();
-        latch_ = NULL;
+  void runInThread() {
+    *tid_ = CurrentThread::tid();
+    tid_ = NULL;
+    latch_->countDown();
+    latch_ = NULL;
 
-        CurrentThread::t_threadName = name_.empty() ? "Thread" : name_.c_str();
-        prctl(PR_SET_NAME, CurrentThread::t_threadName);
+    CurrentThread::t_threadName = name_.empty() ? "Thread" : name_.c_str();
+    prctl(PR_SET_NAME, CurrentThread::t_threadName);
 
-        func_();  // 线程执行函数
+    func_();  // 线程执行函数
 
-        CurrentThread::t_threadName = "finished";
-
-    }
-
+    CurrentThread::t_threadName = "finished";
+  }
 };
 
-void* startThread(void* obj){
-    ThreadData* data = static_cast<ThreadData*>(obj);
-    data -> runInThread();
+void* startThread(void* obj) {
+  ThreadData* data = static_cast<ThreadData*>(obj);
+  data->runInThread();
 
-    delete data;
-    return NULL;
+  delete data;
+  return NULL;
 }
-
 
 // 成员变量
 Thread::Thread(const ThreadFunc& func, const string& n)
@@ -87,51 +84,43 @@ Thread::Thread(const ThreadFunc& func, const string& n)
       tid_(0),
       func_(func),
       name_(n),
-      latch_(1)
-{
-    setDefaultName();
+      latch_(1) {
+  setDefaultName();
 }
 
-Thread::~Thread(){
-    if(started_ && !joined_) 
-    {
-        pthread_detach(pthreadId_);
-    }
-
+Thread::~Thread() {
+  if (started_ && !joined_) {
+    pthread_detach(pthreadId_);
+  }
 }
 
-void Thread::setDefaultName(){
-    if(name_.empty()){
-        char buf[32];
-        snprintf(buf, sizeof(buf), "Thread");
-        name_ = buf;
-    }
+void Thread::setDefaultName() {
+  if (name_.empty()) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "Thread");
+    name_ = buf;
+  }
 }
 
-void Thread::start(){
-    assert(!started_);
-    started_ = true;
-    ThreadData* data = new ThreadData(func_, name_, &tid_, &latch_);
-    // pthread_create是一个线程阻塞的函数，调用它的函数将一直
-    // 等待到被等待的线程结束为止，当函数返回时，被等待线程的资源被收回。
-    // 如果执行成功则返回0， 如果失败则返回一个错误号。
-    if(pthread_create(&pthreadId_, NULL, &startThread, data)){
-        started_ = false;
-        delete data;
-    }
-    else{
-        latch_.wait();
-        assert(tid_ > 0);
-    }
-
+void Thread::start() {
+  assert(!started_);
+  started_ = true;
+  ThreadData* data = new ThreadData(func_, name_, &tid_, &latch_);
+  // pthread_create是一个线程阻塞的函数，调用它的函数将一直
+  // 等待到被等待的线程结束为止，当函数返回时，被等待线程的资源被收回。
+  // 如果执行成功则返回0， 如果失败则返回一个错误号。
+  if (pthread_create(&pthreadId_, NULL, &startThread, data)) {
+    started_ = false;
+    delete data;
+  } else {
+    latch_.wait();
+    assert(tid_ > 0);
+  }
 }
 
-int Thread::join(){
-    assert(started_);
-    assert(!joined_);
-    joined_ = true;
-    return pthread_join(pthreadId_, NULL);
+int Thread::join() {
+  assert(started_);
+  assert(!joined_);
+  joined_ = true;
+  return pthread_join(pthreadId_, NULL);
 }
-
-
-

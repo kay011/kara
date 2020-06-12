@@ -1,17 +1,24 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #include "Server.h"
-#include "Util.h"
-#include "base/Logging.h"
 #include <arpa/inet.h>
-#include <functional>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <functional>
+#include "Util.h"
+#include "base/Logging.h"
 
 Server::Server(EventLoop *loop, int threadNum, int port)
-    : loop_(loop), threadNum_(threadNum),
+    : loop_(loop),
+      threadNum_(threadNum),
       eventLoopThreadPool_(new EventLoopThreadPool(loop_, threadNum)),
-      started_(false), acceptChannel_(new Channel(loop_)), port_(port),
+      started_(false),
+      acceptChannel_(new Channel(loop_)),
+      port_(port),
       listenFd_(socket_bind_listen(port_)) {
   acceptChannel_->setFd(listenFd_);
   handle_for_sigpipe();

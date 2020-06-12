@@ -1,14 +1,18 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #include "HttpData.h"
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <iostream>
 #include "Channel.h"
 #include "EventLoop.h"
 #include "Util.h"
 #include "time.h"
-#include <fcntl.h>
-#include <iostream>
-#include <sys/mman.h>
-#include <sys/stat.h>
 
 using namespace std;
 
@@ -16,8 +20,8 @@ pthread_once_t MimeType::once_control = PTHREAD_ONCE_INIT;
 std::unordered_map<std::string, std::string> MimeType::mime;
 
 const __uint32_t DEFAULT_EVENT = EPOLLIN | EPOLLET | EPOLLONESHOT;
-const int DEFAULT_EXPIRED_TIME = 2000;             // ms
-const int DEFAULT_KEEP_ALIVE_TIME = 5 * 60 * 1000; // ms
+const int DEFAULT_EXPIRED_TIME = 2000;              // ms
+const int DEFAULT_KEEP_ALIVE_TIME = 5 * 60 * 1000;  // ms
 
 char favicon[555] = {
     '\x89', 'P',    'N',    'G',    '\xD',  '\xA',  '\x1A', '\xA',  '\x0',
@@ -110,10 +114,17 @@ std::string MimeType::getMime(const std::string &suffix) {
 }
 
 HttpData::HttpData(EventLoop *loop, int connfd)
-    : loop_(loop), channel_(new Channel(loop, connfd)), fd_(connfd),
-      error_(false), connectionState_(H_CONNECTED), method_(METHOD_GET),
-      HTTPVersion_(HTTP_11), nowReadPos_(0), state_(STATE_PARSE_URI),
-      hState_(H_START), keepAlive_(false) {
+    : loop_(loop),
+      channel_(new Channel(loop, connfd)),
+      fd_(connfd),
+      error_(false),
+      connectionState_(H_CONNECTED),
+      method_(METHOD_GET),
+      HTTPVersion_(HTTP_11),
+      nowReadPos_(0),
+      state_(STATE_PARSE_URI),
+      hState_(H_START),
+      keepAlive_(false) {
   // loop_->queueInLoop(bind(&HttpData::setHandlers, this));
   channel_->setReadHandler(bind(&HttpData::handleRead, this));
   channel_->setWriteHandler(bind(&HttpData::handleWrite, this));
@@ -221,8 +232,7 @@ void HttpData::handleRead() {
         handleError(fd_, 400, "Bad Request: Lack of argument (Content-length)");
         break;
       }
-      if (static_cast<int>(inBuffer_.size()) < content_length)
-        break;
+      if (static_cast<int>(inBuffer_.size()) < content_length) break;
       state_ = STATE_ANALYSIS;
     }
     if (state_ == STATE_ANALYSIS) {
@@ -247,8 +257,7 @@ void HttpData::handleRead() {
     if (!error_ && state_ == STATE_FINISH) {
       this->reset();
       if (inBuffer_.size() > 0) {
-        if (connectionState_ != H_DISCONNECTING)
-          handleRead();
+        if (connectionState_ != H_DISCONNECTING) handleRead();
       }
 
       // if ((keepAlive_ || inBuffer_.size() > 0) && connectionState_ ==
@@ -270,8 +279,7 @@ void HttpData::handleWrite() {
       events_ = 0;
       error_ = true;
     }
-    if (outBuffer_.size() > 0)
-      events_ |= EPOLLOUT;
+    if (outBuffer_.size() > 0) events_ |= EPOLLOUT;
   }
 }
 
@@ -281,8 +289,7 @@ void HttpData::handleConn() {
   if (!error_ && connectionState_ == H_CONNECTED) {
     if (events_ != 0) {
       int timeout = DEFAULT_EXPIRED_TIME;
-      if (keepAlive_)
-        timeout = DEFAULT_KEEP_ALIVE_TIME;
+      if (keepAlive_) timeout = DEFAULT_KEEP_ALIVE_TIME;
       if ((events_ & EPOLLIN) && (events_ & EPOLLOUT)) {
         events_ = __uint32_t(0);
         events_ |= EPOLLOUT;
@@ -399,79 +406,76 @@ HeaderState HttpData::parseHeaders() {
   size_t i = 0;
   for (; i < str.size() && notFinish; ++i) {
     switch (hState_) {
-    case H_START: {
-      if (str[i] == '\n' || str[i] == '\r')
-        break;
-      hState_ = H_KEY;
-      key_start = i;
-      now_read_line_begin = i;
-      break;
-    }
-    case H_KEY: {
-      if (str[i] == ':') {
-        key_end = i;
-        if (key_end - key_start <= 0)
-          return PARSE_HEADER_ERROR;
-        hState_ = H_COLON;
-      } else if (str[i] == '\n' || str[i] == '\r')
-        return PARSE_HEADER_ERROR;
-      break;
-    }
-    case H_COLON: {
-      if (str[i] == ' ') {
-        hState_ = H_SPACES_AFTER_COLON;
-      } else
-        return PARSE_HEADER_ERROR;
-      break;
-    }
-    case H_SPACES_AFTER_COLON: {
-      hState_ = H_VALUE;
-      value_start = i;
-      break;
-    }
-    case H_VALUE: {
-      if (str[i] == '\r') {
-        hState_ = H_CR;
-        value_end = i;
-        if (value_end - value_start <= 0)
-          return PARSE_HEADER_ERROR;
-      } else if (i - value_start > 255)
-        return PARSE_HEADER_ERROR;
-      break;
-    }
-    case H_CR: {
-      if (str[i] == '\n') {
-        hState_ = H_LF;
-        string key(str.begin() + key_start, str.begin() + key_end);
-        string value(str.begin() + value_start, str.begin() + value_end);
-        headers_[key] = value;
-        now_read_line_begin = i;
-      } else
-        return PARSE_HEADER_ERROR;
-      break;
-    }
-    case H_LF: {
-      if (str[i] == '\r') {
-        hState_ = H_END_CR;
-      } else {
-        key_start = i;
+      case H_START: {
+        if (str[i] == '\n' || str[i] == '\r') break;
         hState_ = H_KEY;
+        key_start = i;
+        now_read_line_begin = i;
+        break;
       }
-      break;
-    }
-    case H_END_CR: {
-      if (str[i] == '\n') {
-        hState_ = H_END_LF;
-      } else
-        return PARSE_HEADER_ERROR;
-      break;
-    }
-    case H_END_LF: {
-      notFinish = false;
-      key_start = i;
-      now_read_line_begin = i;
-      break;
-    }
+      case H_KEY: {
+        if (str[i] == ':') {
+          key_end = i;
+          if (key_end - key_start <= 0) return PARSE_HEADER_ERROR;
+          hState_ = H_COLON;
+        } else if (str[i] == '\n' || str[i] == '\r')
+          return PARSE_HEADER_ERROR;
+        break;
+      }
+      case H_COLON: {
+        if (str[i] == ' ') {
+          hState_ = H_SPACES_AFTER_COLON;
+        } else
+          return PARSE_HEADER_ERROR;
+        break;
+      }
+      case H_SPACES_AFTER_COLON: {
+        hState_ = H_VALUE;
+        value_start = i;
+        break;
+      }
+      case H_VALUE: {
+        if (str[i] == '\r') {
+          hState_ = H_CR;
+          value_end = i;
+          if (value_end - value_start <= 0) return PARSE_HEADER_ERROR;
+        } else if (i - value_start > 255)
+          return PARSE_HEADER_ERROR;
+        break;
+      }
+      case H_CR: {
+        if (str[i] == '\n') {
+          hState_ = H_LF;
+          string key(str.begin() + key_start, str.begin() + key_end);
+          string value(str.begin() + value_start, str.begin() + value_end);
+          headers_[key] = value;
+          now_read_line_begin = i;
+        } else
+          return PARSE_HEADER_ERROR;
+        break;
+      }
+      case H_LF: {
+        if (str[i] == '\r') {
+          hState_ = H_END_CR;
+        } else {
+          key_start = i;
+          hState_ = H_KEY;
+        }
+        break;
+      }
+      case H_END_CR: {
+        if (str[i] == '\n') {
+          hState_ = H_END_LF;
+        } else
+          return PARSE_HEADER_ERROR;
+        break;
+      }
+      case H_END_LF: {
+        notFinish = false;
+        key_start = i;
+        now_read_line_begin = i;
+        break;
+      }
     }
   }
   if (hState_ == H_END_LF) {
@@ -556,8 +560,7 @@ AnalysisState HttpData::analysisRequest() {
     header += "\r\n";
     outBuffer_ += header;
 
-    if (method_ == METHOD_HEAD)
-      return ANALYSIS_SUCCESS;
+    if (method_ == METHOD_HEAD) return ANALYSIS_SUCCESS;
 
     int src_fd = open(fileName_.c_str(), O_RDONLY, 0);
     if (src_fd < 0) {

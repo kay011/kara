@@ -19,14 +19,14 @@ const char* zero = digits + 9;
 // 单元测试？
 template <typename T>
 size_t convert(char buf[], T value) {
-    T i = value;
-    char* p = buf;
+  T i = value;
+  char* p = buf;
 
-    do {
-        int lsd = static_cast<int>(i % 10);
-        i /= 10;
-        *p++ = zero[lsd];
-    } while (i != 0);
+  do {
+    int lsd = static_cast<int>(i % 10);
+    i /= 10;
+    *p++ = zero[lsd];
+  } while (i != 0);
 
   if (value < 0) {
     *p++ = '-';
@@ -104,7 +104,3 @@ LogStream& LogStream::operator<<(long double v) {
   }
   return *this;
 }
-
-
-
-

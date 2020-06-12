@@ -1,18 +1,22 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #pragma once
-#include "HttpData.h"
-#include "base/MutexLock.h"
-#include "base/noncopyable.h"
+#include <unistd.h>
 #include <deque>
 #include <memory>
 #include <queue>
-#include <unistd.h>
+#include "HttpData.h"
+#include "base/MutexLock.h"
+#include "base/noncopyable.h"
 
 class HttpData;
 
 class TimerNode {
-public:
+ public:
   TimerNode(std::shared_ptr<HttpData> requestData, int timeout);
   ~TimerNode();
   TimerNode(TimerNode &tn);
@@ -23,7 +27,7 @@ public:
   bool isDeleted() const { return deleted_; }
   size_t getExpTime() const { return expiredTime_; }
 
-private:
+ private:
   bool deleted_;
   size_t expiredTime_;
   std::shared_ptr<HttpData> SPHttpData;
@@ -37,15 +41,14 @@ struct TimerCmp {
 };
 
 class TimerManager {
-public:
+ public:
   TimerManager();
   ~TimerManager();
   void addTimer(std::shared_ptr<HttpData> SPHttpData, int timeout);
   void handleExpiredEvent();
 
-private:
+ private:
   typedef std::shared_ptr<TimerNode> SPTimerNode;
   std::priority_queue<SPTimerNode, std::deque<SPTimerNode>, TimerCmp>
       timerNodeQueue;
-  // MutexLock lock;
 };

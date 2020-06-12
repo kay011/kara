@@ -1,5 +1,9 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #pragma once
 #include "EventLoop.h"
 #include "base/Condition.h"
@@ -8,12 +12,12 @@
 #include "base/noncopyable.h"
 
 class EventLoopThread : noncopyable {
-public:
+ public:
   EventLoopThread();
   ~EventLoopThread();
   EventLoop *startLoop();
 
-private:
+ private:
   void threadFunc();
   EventLoop *loop_;
   bool exiting_;

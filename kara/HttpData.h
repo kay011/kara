@@ -1,14 +1,18 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #pragma once
-#include "Timer.h"
+#include <sys/epoll.h>
+#include <unistd.h>
 #include <functional>
 #include <map>
 #include <memory>
 #include <string>
-#include <sys/epoll.h>
-#include <unistd.h>
 #include <unordered_map>
+#include "Timer.h"
 
 class EventLoop;
 class TimerNode;
@@ -55,21 +59,21 @@ enum HttpMethod { METHOD_POST = 1, METHOD_GET, METHOD_HEAD };
 enum HttpVersion { HTTP_10 = 1, HTTP_11 };
 
 class MimeType {
-private:
+ private:
   static void init();
   static std::unordered_map<std::string, std::string> mime;
   MimeType();
   MimeType(const MimeType &m);
 
-public:
+ public:
   static std::string getMime(const std::string &suffix);
 
-private:
+ private:
   static pthread_once_t once_control;
 };
 
 class HttpData : public std::enable_shared_from_this<HttpData> {
-public:
+ public:
   HttpData(EventLoop *loop, int connfd);
   ~HttpData() { close(fd_); }
   void reset();
@@ -83,7 +87,7 @@ public:
   void handleClose();
   void newEvent();
 
-private:
+ private:
   EventLoop *loop_;
   std::shared_ptr<Channel> channel_;
   int fd_;

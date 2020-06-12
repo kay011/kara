@@ -1,12 +1,18 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #include "EventLoopThread.h"
 #include <functional>
 
 EventLoopThread::EventLoopThread()
-    : loop_(NULL), exiting_(false),
+    : loop_(NULL),
+      exiting_(false),
       thread_(bind(&EventLoopThread::threadFunc, this), "EventLoopThread"),
-      mutex_(), cond_(mutex_) {}
+      mutex_(),
+      cond_(mutex_) {}
 
 EventLoopThread::~EventLoopThread() {
   exiting_ = true;
@@ -22,8 +28,7 @@ EventLoop *EventLoopThread::startLoop() {
   {
     MutexLockGuard lock(mutex_);
     // 一直等到threadFun在Thread里真正跑起来
-    while (loop_ == NULL)
-      cond_.wait();
+    while (loop_ == NULL) cond_.wait();
   }
   return loop_;
 }

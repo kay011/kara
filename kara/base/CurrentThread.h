@@ -22,15 +22,9 @@ inline int tid() {
   return t_cachedTid;
 }
 
-inline const char* tidString()  // for logging
-{
-  return t_tidString;
-}
+inline const char* tidString() { return t_tidString; }
 
-inline int tidStringLength()  // for logging
-{
-  return t_tidStringLength;
-}
+inline int tidStringLength() { return t_tidStringLength; }
 
 inline const char* name() { return t_threadName; }
 }

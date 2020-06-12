@@ -1,19 +1,23 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
+/**
+ * @Author Karate Yuan
+ * @Email haodong_yuan@163.com
+ * @Date: 2020/6/12
+ */
+
 #pragma once
-#include "Timer.h"
+#include <sys/epoll.h>
+#include <sys/epoll.h>
 #include <functional>
 #include <memory>
 #include <string>
-#include <sys/epoll.h>
-#include <sys/epoll.h>
 #include <unordered_map>
+#include "Timer.h"
 
 class EventLoop;
 class HttpData;
 
 class Channel {
-private:
+ private:
   typedef std::function<void()> CallBack;
   EventLoop *loop_;
   int fd_;
@@ -24,7 +28,7 @@ private:
   // 方便找到上层持有该Channel的对象
   std::weak_ptr<HttpData> holder_;
 
-private:
+ private:
   int parse_URI();
   int parse_Headers();
   int analysisRequest();
@@ -34,7 +38,7 @@ private:
   CallBack errorHandler_;
   CallBack connHandler_;
 
-public:
+ public:
   Channel(EventLoop *loop);
   Channel(EventLoop *loop, int fd);
   ~Channel() {}
@@ -63,8 +67,7 @@ public:
       return;
     }
     if (revents_ & EPOLLERR) {
-      if (errorHandler_)
-        errorHandler_();
+      if (errorHandler_) errorHandler_();
       events_ = 0;
       return;
     }

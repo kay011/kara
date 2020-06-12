@@ -5,13 +5,13 @@
  */
 
 #include "Channel.h"
-#include "Epoll.h"
-#include "EventLoop.h"
-#include "Util.h"
+#include <unistd.h>
 #include <cstdlib>
 #include <iostream>
 #include <queue>
-#include <unistd.h>
+#include "Epoll.h"
+#include "EventLoop.h"
+#include "Util.h"
 
 using namespace std;
 
