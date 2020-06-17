@@ -20,7 +20,7 @@ std::string Logger::logFileName_ = "./KaraServer.log";
 
 void once_init() {
   AsyncLogger_ = new AsyncLogging(Logger::getLogFileName());
-  AsyncLogger_->start();
+  AsyncLogger_->start();  // 启动线程
 }
 
 void output(const char* msg, int len) {

@@ -16,6 +16,7 @@ class MutexLock : noncopyable {
   ~MutexLock() {
     // 为什么销毁前要加锁？
     // pthread_mutex_lock(&mutex);
+    // 销毁一个已经加锁的互斥锁会导致不可预期的结果
     pthread_mutex_destroy(&mutex);
   }
 
@@ -25,6 +26,7 @@ class MutexLock : noncopyable {
 
  private:
   pthread_mutex_t mutex;
+
 };
 
 class MutexLockGuard : noncopyable {

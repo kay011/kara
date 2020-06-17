@@ -3,7 +3,7 @@
  * @Email haodong_yuan@163.com
  * @Date: 2020/6/12
  */
-
+// 有点乱，重构下？
 #pragma once
 #include <sys/epoll.h>
 #include <sys/epoll.h>
@@ -29,10 +29,6 @@ class Channel {
   std::weak_ptr<HttpData> holder_;
 
  private:
-  int parse_URI();
-  int parse_Headers();
-  int analysisRequest();
-
   CallBack readHandler_;
   CallBack writeHandler_;
   CallBack errorHandler_;
@@ -59,36 +55,15 @@ class Channel {
     errorHandler_ = errorHandler;
   }
   void setConnHandler(CallBack &&connHandler) { connHandler_ = connHandler; }
-
-  void handleEvents() {
-    events_ = 0;
-    if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
-      events_ = 0;
-      return;
-    }
-    if (revents_ & EPOLLERR) {
-      if (errorHandler_) errorHandler_();
-      events_ = 0;
-      return;
-    }
-    if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
-      handleRead();
-    }
-    if (revents_ & EPOLLOUT) {
-      handleWrite();
-    }
-    handleConn();
-  }
-  void handleRead();
-  void handleWrite();
-  void handleError(int fd, int err_num, std::string short_msg);
-  void handleConn();
+  // 核心
+  void handleEvents();
 
   void setRevents(__uint32_t ev) { revents_ = ev; }
 
   void setEvents(__uint32_t ev) { events_ = ev; }
   __uint32_t &getEvents() { return events_; }
-
+  // lastEvents是否和events相等
+  // 更新lastEvents
   bool EqualAndUpdateLastEvents() {
     bool ret = (lastEvents_ == events_);
     lastEvents_ = events_;

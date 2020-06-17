@@ -24,7 +24,7 @@ using namespace std;
 const int EVENTSNUM = 4096;
 const int EPOLLWAIT_TIME = 10000;
 
-typedef shared_ptr<Channel> SP_Channel;
+// typedef shared_ptr<Channel> SP_Channel;
 
 Epoll::Epoll() : epollFd_(epoll_create1(EPOLL_CLOEXEC)), events_(EVENTSNUM) {
   assert(epollFd_ > 0);
@@ -34,14 +34,15 @@ Epoll::~Epoll() {}
 // 注册新描述符
 void Epoll::epoll_add(SP_Channel request, int timeout) {
   int fd = request->getFd();
+  // 如果没有设置超时时间，则默认不定时
   if (timeout > 0) {
     add_timer(request, timeout);
     fd2http_[fd] = request->getHolder();
   }
   struct epoll_event event;
   event.data.fd = fd;
-  event.events = request->getEvents();
-
+  event.events = request->getEvents(); // set过了
+  // 对Channel执行
   request->EqualAndUpdateLastEvents();
 
   fd2chan_[fd] = request;
@@ -55,6 +56,7 @@ void Epoll::epoll_add(SP_Channel request, int timeout) {
 void Epoll::epoll_mod(SP_Channel request, int timeout) {
   if (timeout > 0) add_timer(request, timeout);
   int fd = request->getFd();
+  // 如果 request 的lastEvents != events
   if (!request->EqualAndUpdateLastEvents()) {
     struct epoll_event event;
     event.data.fd = fd;
@@ -69,7 +71,7 @@ void Epoll::epoll_mod(SP_Channel request, int timeout) {
 // 从epoll中删除描述符
 void Epoll::epoll_del(SP_Channel request) {
   int fd = request->getFd();
-  struct epoll_event event;
+  struct epoll_event event;  // epoll_event被用于注册所感兴趣的事件和回传所发生待处理的事件
   event.data.fd = fd;
   event.events = request->getLastEvents();
   // event.events = 0;
@@ -100,7 +102,7 @@ std::vector<SP_Channel> Epoll::getEventsRequest(int events_num) {
   for (int i = 0; i < events_num; ++i) {
     // 获取有事件产生的描述符
     int fd = events_[i].data.fd;
-
+    // 根据fd获取对应的SP_Channel
     SP_Channel cur_req = fd2chan_[fd];
 
     if (cur_req) {

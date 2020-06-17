@@ -30,6 +30,7 @@ public:
   bool isInLoopThread() const { return threadId_ == CurrentThread::tid(); }
   void assertInLoopThread() { assert(isInLoopThread()); }
   void shutdown(shared_ptr<Channel> channel) { shutDownWR(channel->getFd()); }
+  // 封装了一层，调用Epoll对象
   void removeFromPoller(shared_ptr<Channel> channel) {
     // shutDownWR(channel->getFd());
     poller_->epoll_del(channel);
@@ -45,16 +46,16 @@ private:
   // 声明顺序 wakeupFd_ > pwakeupChannel_
   bool looping_;
   shared_ptr<Epoll> poller_;
-  int wakeupFd_;
+  int wakeupFd_;   // 一个EventLoop放一个fd eventfd
   bool quit_;
   bool eventHandling_;
-  mutable MutexLock mutex_;
+  mutable MutexLock mutex_;  // 互斥锁 锁什么，锁 pendingFunctors_
   std::vector<Functor> pendingFunctors_;
   bool callingPendingFunctors_;
   const pid_t threadId_;
   shared_ptr<Channel> pwakeupChannel_;
 
-  void wakeup();
+  void wakeup();  // 唤醒什么
   void handleRead();
   void doPendingFunctors();
   void handleConn();

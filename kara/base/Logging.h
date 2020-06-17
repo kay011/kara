@@ -26,7 +26,7 @@ class Logger {
    public:
     Impl(const char *fileName, int line);
     void formatTime();
-    LogStream stream_;
+    LogStream stream_;  // << 会写入stream_
     int line_;
     std::string basename_;
   };

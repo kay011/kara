@@ -11,7 +11,7 @@
 #include "base/Logging.h"
 
 int main(int argc, char *argv[]) {
-  int threadNum = 4;
+  int threadNum = 2;
   int port = 8088;
   std::string logPath = "./KaraServer.log";
 
@@ -44,6 +44,6 @@ int main(int argc, char *argv[]) {
   EventLoop mainLoop;
   Server myHTTPServer(&mainLoop, threadNum, port);
   myHTTPServer.start();
-  mainLoop.loop();
+  mainLoop.loop();   // MainReactor SubReactor 在 线程池
   return 0;
 }

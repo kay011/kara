@@ -41,5 +41,6 @@ void AppendFile::append(const char* logline, const size_t len) {
 void AppendFile::flush() { fflush(fp_); }
 
 size_t AppendFile::write(const char* logline, size_t len) {
-  return fwrite_unlocked(logline, 1, len, fp_);
+  // fwrite 是C库， write是系统调用
+  return fwrite_unlocked(logline, 1, len, fp_);  // 线程不安全版本
 }

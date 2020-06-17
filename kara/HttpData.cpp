@@ -17,7 +17,7 @@
 using namespace std;
 
 pthread_once_t MimeType::once_control = PTHREAD_ONCE_INIT;
-std::unordered_map<std::string, std::string> MimeType::mime;
+unordered_map<string, string> MimeType::mime;
 
 const __uint32_t DEFAULT_EVENT = EPOLLIN | EPOLLET | EPOLLONESHOT;
 const int DEFAULT_EXPIRED_TIME = 2000;              // ms
@@ -126,11 +126,17 @@ HttpData::HttpData(EventLoop *loop, int connfd)
       hState_(H_START),
       keepAlive_(false) {
   // loop_->queueInLoop(bind(&HttpData::setHandlers, this));
+  // 这里我们这样考虑，Channel相当于一个AbstractEventHandler
+  // 是一个接口, 正常来说可以用虚函数继承的方式去处理请求，
+  // 但是由于C++11的特性，我们可以用回调的方式代替 继承与虚函数
+  // 对于Http数据，我们设置相应的回调函数
+  // 加入我们要实现一个FTP服务器，我们只要实现一个FtpData，同时设置对应于处理Ftp数据的回调函数即可。
+
   channel_->setReadHandler(bind(&HttpData::handleRead, this));
   channel_->setWriteHandler(bind(&HttpData::handleWrite, this));
   channel_->setConnHandler(bind(&HttpData::handleConn, this));
 }
-
+// 可以理解为HttpData的重置函数
 void HttpData::reset() {
   // inBuffer_.clear();
   fileName_.clear();
@@ -178,7 +184,7 @@ void HttpData::handleRead() {
     //     error_ = true;
     //     break;
     // }
-    else if (zero) {
+    else if (zero) {  // zero表示没有读取到数据
       // 有请求出现但是读不到数据，可能是Request
       // Aborted，或者来自网络的数据没有达到等原因
       // 最可能是对端已经关闭了，统一按照对端已经关闭处理
@@ -190,7 +196,7 @@ void HttpData::handleRead() {
       }
       // cout << "readnum == 0" << endl;
     }
-
+    // 首先处理URI
     if (state_ == STATE_PARSE_URI) {
       URIState flag = this->parseURI();
       if (flag == PARSE_URI_AGAIN)
@@ -249,11 +255,13 @@ void HttpData::handleRead() {
   } while (false);
   // cout << "state_=" << state_ << endl;
   if (!error_) {
+    // 读完之后，根据读的内容处理写
     if (outBuffer_.size() > 0) {
       handleWrite();
       // events_ |= EPOLLOUT;
     }
     // error_ may change
+    // 写也可能出现错误？
     if (!error_ && state_ == STATE_FINISH) {
       this->reset();
       if (inBuffer_.size() > 0) {
@@ -273,7 +281,7 @@ void HttpData::handleRead() {
 
 void HttpData::handleWrite() {
   if (!error_ && connectionState_ != H_DISCONNECTED) {
-    __uint32_t &events_ = channel_->getEvents();
+    __uint32_t &events_ = channel_->getEvents(); // 注意这里取得是引用
     if (writen(fd_, outBuffer_) < 0) {
       perror("writen");
       events_ = 0;
@@ -317,12 +325,13 @@ void HttpData::handleConn() {
     events_ = (EPOLLOUT | EPOLLET);
   } else {
     // cout << "close with errors" << endl;
+    // 这里用了runInLoop
     loop_->runInLoop(bind(&HttpData::handleClose, shared_from_this()));
   }
 }
-
+// 解析URI，如:
 URIState HttpData::parseURI() {
-  string &str = inBuffer_;
+  string &str = inBuffer_;  // inBuffer_里存放的是读取的数据
   string cop = str;
   // 读到完整的请求行再开始解析请求
   size_t pos = str.find('\r', nowReadPos_);
@@ -555,7 +564,7 @@ AnalysisState HttpData::analysisRequest() {
     }
     header += "Content-Type: " + filetype + "\r\n";
     header += "Content-Length: " + to_string(sbuf.st_size) + "\r\n";
-    header += "Server: LinYa's Web Server\r\n";
+    header += "Server: Kara Web Server\r\n";
     // 头部结束
     header += "\r\n";
     outBuffer_ += header;
@@ -589,16 +598,16 @@ void HttpData::handleError(int fd, int err_num, string short_msg) {
   short_msg = " " + short_msg;
   char send_buff[4096];
   string body_buff, header_buff;
-  body_buff += "<html><title>哎~出错了</title>";
+  body_buff += "<html><title>Error Page</title>";
   body_buff += "<body bgcolor=\"ffffff\">";
   body_buff += to_string(err_num) + short_msg;
-  body_buff += "<hr><em> LinYa's Web Server</em>\n</body></html>";
+  body_buff += "<hr><em> Kara Web Server</em>\n</body></html>";
 
   header_buff += "HTTP/1.1 " + to_string(err_num) + short_msg + "\r\n";
   header_buff += "Content-Type: text/html\r\n";
   header_buff += "Connection: Close\r\n";
   header_buff += "Content-Length: " + to_string(body_buff.size()) + "\r\n";
-  header_buff += "Server: LinYa's Web Server\r\n";
+  header_buff += "Server: Kara Web Server\r\n";
   ;
   header_buff += "\r\n";
   // 错误处理不考虑writen不完的情况

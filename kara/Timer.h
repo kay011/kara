@@ -14,7 +14,7 @@
 #include "base/noncopyable.h"
 
 class HttpData;
-
+// 再探定时器
 class TimerNode {
  public:
   TimerNode(std::shared_ptr<HttpData> requestData, int timeout);
@@ -30,6 +30,7 @@ class TimerNode {
  private:
   bool deleted_;
   size_t expiredTime_;
+  // 
   std::shared_ptr<HttpData> SPHttpData;
 };
 
@@ -39,7 +40,7 @@ struct TimerCmp {
     return a->getExpTime() > b->getExpTime();
   }
 };
-
+// 维护一个优先级队列
 class TimerManager {
  public:
   TimerManager();

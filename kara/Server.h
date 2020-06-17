@@ -5,25 +5,29 @@
  */
 
 #pragma once
+#include <memory>
 #include "Channel.h"
 #include "EventLoop.h"
 #include "EventLoopThreadPool.h"
-#include <memory>
+// 相当于TcpServer，简化了，没有实现单独的Acceptor类
+// 直接持有 AcceptChannel_
 
 class Server {
-public:
+ public:
   Server(EventLoop *loop, int threadNum, int port);
-  ~Server() {}
+  ~Server() { close(listenFd_); }
   EventLoop *getLoop() const { return loop_; }
   void start();
   void handNewConn();
   void handThisConn() { loop_->updatePoller(acceptChannel_); }
 
-private:
+ private:
   EventLoop *loop_;
   int threadNum_;
+  // 持有一个线程池里面的线程都是跑着EventLoop，等待着注入回调
   std::unique_ptr<EventLoopThreadPool> eventLoopThreadPool_;
   bool started_;
+  // 持有一个acceptChannel
   std::shared_ptr<Channel> acceptChannel_;
   int port_;
   int listenFd_;

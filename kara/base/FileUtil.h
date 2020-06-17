@@ -7,7 +7,8 @@
 #pragma once
 #include <string>
 #include "noncopyable.h"
-
+// 功能:
+// 打开一个文件： 往文件中添加一行
 class AppendFile : noncopyable {
  public:
   explicit AppendFile(std::string filename);

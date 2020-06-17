@@ -43,7 +43,7 @@ class FixedBuffer : noncopyable {
 
  private:
   const char* end() const { return data_ + sizeof(data_); }
-  char data_[SIZE];
+  char data_[SIZE];   // buffer就是一段连续的数组空间
   char* cur_;
 };
 
