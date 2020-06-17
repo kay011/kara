@@ -85,6 +85,7 @@ void TimerManager::addTimer(std::shared_ptr<HttpData> SPHttpData, int timeout) {
 */
 //在Epoll中调用
 void TimerManager::handleExpiredEvent() {
+  // 加锁吗 one eventloop per thread
   // MutexLockGuard locker(lock);
   while (!timerNodeQueue.empty()) {
     SPTimerNode ptimer_now = timerNodeQueue.top();

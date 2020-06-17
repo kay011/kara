@@ -53,7 +53,7 @@ private:
   std::vector<Functor> pendingFunctors_;
   bool callingPendingFunctors_;
   const pid_t threadId_;
-  shared_ptr<Channel> pwakeupChannel_;
+  SP_Channel pwakeupChannel_; // 每个Channel对象自始至终只属于一个EventLoop
 
   void wakeup();  // 唤醒什么
   void handleRead();

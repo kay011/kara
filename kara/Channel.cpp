@@ -25,7 +25,7 @@ int Channel::getFd() { return fd_; }
 void Channel::setFd(int fd) { fd_ = fd; }
 
 void Channel::handleEvents() {
-  events_ = 0;
+  events_ = 0;  // 置零操作
   if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
     events_ = 0;
     return;

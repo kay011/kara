@@ -146,11 +146,12 @@ void HttpData::reset() {
   hState_ = H_START;
   headers_.clear();
   // keepAlive_ = false;
-  if (timer_.lock()) {
-    shared_ptr<TimerNode> my_timer(timer_.lock());
-    my_timer->clearReq();
-    timer_.reset();
-  }
+  //if (timer_.lock()) {
+  //  shared_ptr<TimerNode> my_timer(timer_.lock());
+  //  my_timer->clearReq();
+  //  timer_.reset();
+  //}
+  seperateTimer();
 }
 
 void HttpData::seperateTimer() {
@@ -295,6 +296,7 @@ void HttpData::handleConn() {
   seperateTimer();
   __uint32_t &events_ = channel_->getEvents();
   if (!error_ && connectionState_ == H_CONNECTED) {
+    // 不等于0说明是 新连接
     if (events_ != 0) {
       int timeout = DEFAULT_EXPIRED_TIME;
       if (keepAlive_) timeout = DEFAULT_KEEP_ALIVE_TIME;
@@ -312,6 +314,7 @@ void HttpData::handleConn() {
       int timeout = DEFAULT_KEEP_ALIVE_TIME;
       loop_->updatePoller(channel_, timeout);
     } else {
+      // 短连接？？
       // cout << "close normally" << endl;
       // loop_->shutdown(channel_);
       // loop_->runInLoop(bind(&HttpData::handleClose, shared_from_this()));
@@ -326,6 +329,7 @@ void HttpData::handleConn() {
   } else {
     // cout << "close with errors" << endl;
     // 这里用了runInLoop
+    // 遇到错误直接关闭
     loop_->runInLoop(bind(&HttpData::handleClose, shared_from_this()));
   }
 }
@@ -407,6 +411,7 @@ URIState HttpData::parseURI() {
   return PARSE_URI_SUCCESS;
 }
 
+// 解析头部信息
 HeaderState HttpData::parseHeaders() {
   string &str = inBuffer_;
   int key_start = -1, key_end = -1, value_start = -1, value_end = -1;
@@ -495,6 +500,10 @@ HeaderState HttpData::parseHeaders() {
   return PARSE_HEADER_AGAIN;
 }
 
+// 解析请求
+// GET
+// POST
+// HEAD
 AnalysisState HttpData::analysisRequest() {
   if (method_ == METHOD_POST) {
     // ------------------------------------------------------
@@ -547,7 +556,7 @@ AnalysisState HttpData::analysisRequest() {
     if (fileName_ == "favicon.ico") {
       header += "Content-Type: image/png\r\n";
       header += "Content-Length: " + to_string(sizeof favicon) + "\r\n";
-      header += "Server: LinYa's Web Server\r\n";
+      header += "Server: Kara Web Server\r\n";
 
       header += "\r\n";
       outBuffer_ += header;
@@ -555,7 +564,13 @@ AnalysisState HttpData::analysisRequest() {
       ;
       return ANALYSIS_SUCCESS;
     }
-
+    // struct stat 这个结构体用来描述一个linux系统文件系统中的文件属性的结构。
+    // 可以有两种方法获取一个文件的属性
+    // 1. 通过路径
+    // int stat(const char *path, struct stat *struct_stat);
+    // int lstat(const char *path,struct stat *struct_stat);
+    // 2. 通过文件描述符
+    // int fstat(int fdp, struct stat *struct_stat);　　//通过文件描述符获取文件对应的属性。fdp为文件描述符
     struct stat sbuf;
     if (stat(fileName_.c_str(), &sbuf) < 0) {
       header.clear();
@@ -568,7 +583,7 @@ AnalysisState HttpData::analysisRequest() {
     // 头部结束
     header += "\r\n";
     outBuffer_ += header;
-
+    // 如果只是请求头部，这里就return了
     if (method_ == METHOD_HEAD) return ANALYSIS_SUCCESS;
 
     int src_fd = open(fileName_.c_str(), O_RDONLY, 0);
@@ -577,6 +592,8 @@ AnalysisState HttpData::analysisRequest() {
       handleError(fd_, 404, "Not Found!");
       return ANALYSIS_ERROR;
     }
+    // mmap函数 将一个文件或者其他对象映射进内存。文件被映射到多个页上，如果文件的大小不是所有页的大小之和，
+    // 最后一个页不被使用的空间将会清零。mmap在用户空间映射调用系统中作用很大。
     void *mmapRet = mmap(NULL, sbuf.st_size, PROT_READ, MAP_PRIVATE, src_fd, 0);
     close(src_fd);
     if (mmapRet == (void *)-1) {

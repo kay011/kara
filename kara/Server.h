@@ -11,6 +11,9 @@
 #include "EventLoopThreadPool.h"
 // 相当于TcpServer，简化了，没有实现单独的Acceptor类
 // 直接持有 AcceptChannel_
+// 主线程是一个mainReactor运行一个eventloop
+// 只监听是否有新连接
+// 如何实现长连接  keep-alive
 
 class Server {
  public:

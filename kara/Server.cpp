@@ -89,5 +89,5 @@ void Server::handNewConn() {
     // loop->queueInLoop(std::bind(&HttpData::newEvent, req_info));
     loop->runInLoop(std::bind(&HttpData::newEvent, req_info));
   }
-  acceptChannel_->setEvents(EPOLLIN | EPOLLET);
+  acceptChannel_->setEvents(EPOLLIN | EPOLLET);  // 关心的事件
 }

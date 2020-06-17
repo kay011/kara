@@ -101,12 +101,12 @@ void EventLoop::loop() {
   while (!quit_) {
     // cout << "doing" << endl;
     ret.clear();
-    ret = poller_->poll();
+    ret = poller_->poll(); // 单线程中调用
     eventHandling_ = true;
-    for (auto &it : ret) it->handleEvents();
+    for (auto &it : ret) it->handleEvents();  // Channel 的 handleEvents 在loop中调用
     eventHandling_ = false;
     doPendingFunctors();  // 处理队列中的事件回调
-    poller_->handleExpired();
+    poller_->handleExpired();  // 处理超时
   }
   looping_ = false;
 }

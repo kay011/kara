@@ -16,6 +16,13 @@
 class EventLoop;
 class HttpData;
 
+/**
+ * Channel 的生命周期由其owner class 负责管理，它一般是其他class的直接或间接成员。
+ * Channel相当于一个通道，封装了fd
+ * 每个Channel都属于一个eventLoop
+ * 通过向Channel注册回调函数来处理不同的事件
+ * Channel的成员函数都
+ */ 
 class Channel {
  private:
   typedef std::function<void()> CallBack;
@@ -55,8 +62,8 @@ class Channel {
     errorHandler_ = errorHandler;
   }
   void setConnHandler(CallBack &&connHandler) { connHandler_ = connHandler; }
-  // 核心
-  void handleEvents();
+  // 核心 功能是根据revents的值分别调用不同的用户回调。
+  void handleEvents(); // 被EventLoop::loop()调用
 
   void setRevents(__uint32_t ev) { revents_ = ev; }
 
@@ -72,5 +79,5 @@ class Channel {
 
   __uint32_t getLastEvents() { return lastEvents_; }
 };
-
+// 是要被别的class调用的
 typedef std::shared_ptr<Channel> SP_Channel;
