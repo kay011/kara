@@ -125,13 +125,6 @@ HttpData::HttpData(EventLoop *loop, int connfd)
       state_(STATE_PARSE_URI),
       hState_(H_START),
       keepAlive_(false) {
-  // loop_->queueInLoop(bind(&HttpData::setHandlers, this));
-  // 这里我们这样考虑，Channel相当于一个AbstractEventHandler
-  // 是一个接口, 正常来说可以用虚函数继承的方式去处理请求，
-  // 但是由于C++11的特性，我们可以用回调的方式代替 继承与虚函数
-  // 对于Http数据，我们设置相应的回调函数
-  // 加入我们要实现一个FTP服务器，我们只要实现一个FtpData，同时设置对应于处理Ftp数据的回调函数即可。
-
   channel_->setReadHandler(bind(&HttpData::handleRead, this));
   channel_->setWriteHandler(bind(&HttpData::handleWrite, this));
   channel_->setConnHandler(bind(&HttpData::handleConn, this));
@@ -146,11 +139,6 @@ void HttpData::reset() {
   hState_ = H_START;
   headers_.clear();
   // keepAlive_ = false;
-  //if (timer_.lock()) {
-  //  shared_ptr<TimerNode> my_timer(timer_.lock());
-  //  my_timer->clearReq();
-  //  timer_.reset();
-  //}
   seperateTimer();
 }
 
@@ -548,7 +536,9 @@ AnalysisState HttpData::analysisRequest() {
       filetype = MimeType::getMime(fileName_.substr(dot_pos));
 
     // echo test
+    // 测试用
     if (fileName_ == "hello") {
+      // 没有设置头部信息
       outBuffer_ =
           "HTTP/1.1 200 OK\r\nContent-type: text/plain\r\n\r\nHello World";
       return ANALYSIS_SUCCESS;
