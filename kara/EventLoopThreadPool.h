@@ -26,5 +26,5 @@ class EventLoopThreadPool : noncopyable {
   int numThreads_;
   int next_;
   std::vector<std::shared_ptr<EventLoopThread>> threads_;
-  std::vector<EventLoop *> loops_;
+  std::vector<EventLoop *> loops_;  // 任务队列为啥用vector
 };

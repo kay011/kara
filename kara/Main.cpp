@@ -14,9 +14,7 @@ int main(int argc, char *argv[]) {
   int threadNum = 2;
   int port = 8088;
   std::string logPath = "./KaraServer.log";
-
   int opt;
-  // 冒号表示 -t 后面必须带有参数
   const char *str = "t:l:p:";
   while ((opt = getopt(argc, argv, str)) != -1) {
     switch (opt) {
@@ -44,6 +42,6 @@ int main(int argc, char *argv[]) {
   EventLoop mainLoop;
   Server myHTTPServer(&mainLoop, threadNum, port);
   myHTTPServer.start();
-  mainLoop.loop();   // MainReactor SubReactor 在 线程池
+  mainLoop.loop();
   return 0;
 }
