@@ -40,18 +40,18 @@ class AsyncLogging : noncopyable {
   }
 
  private:
-  void threadFunc();
+  void threadFunc();  // 用来绑定给线程类
   typedef FixedBuffer<kLargeBuffer> Buffer;
   typedef std::vector<std::shared_ptr<Buffer>> BufferVector;
   typedef std::shared_ptr<Buffer> BufferPtr;
-  const int flushInterval_;
+  const int flushInterval_;  // 刷新间隔
   bool running_;
   std::string basename_;
-  Thread thread_;
-  MutexLock mutex_;
+  Thread thread_;    // 开启了新的线程
+  MutexLock mutex_;    // 保证线程安全
   Condition cond_;
-  BufferPtr currentBuffer_;
-  BufferPtr nextBuffer_;
-  BufferVector buffers_;
-  CountDownLatch latch_;
+  BufferPtr currentBuffer_;  // 当前缓冲
+  BufferPtr nextBuffer_;     // 预备缓冲
+  BufferVector buffers_;     // 待写入文件的已填满的缓冲
+  CountDownLatch latch_;     // 用来干嘛
 };

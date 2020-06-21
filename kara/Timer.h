@@ -14,7 +14,8 @@
 #include "base/noncopyable.h"
 
 class HttpData;
-
+// 再探定时器
+// 定时器与HttpData类有关
 class TimerNode {
  public:
   TimerNode(std::shared_ptr<HttpData> requestData, int timeout);
@@ -22,7 +23,7 @@ class TimerNode {
   TimerNode(TimerNode &tn);
   void update(int timeout);
   bool isValid();
-  void clearReq();
+  void clearReq();  // 清除超时连接
   void setDeleted() { deleted_ = true; }
   bool isDeleted() const { return deleted_; }
   size_t getExpTime() const { return expiredTime_; }
@@ -30,6 +31,7 @@ class TimerNode {
  private:
   bool deleted_;
   size_t expiredTime_;
+  // 
   std::shared_ptr<HttpData> SPHttpData;
 };
 
@@ -39,7 +41,7 @@ struct TimerCmp {
     return a->getExpTime() > b->getExpTime();
   }
 };
-
+// 维护一个优先级队列
 class TimerManager {
  public:
   TimerManager();

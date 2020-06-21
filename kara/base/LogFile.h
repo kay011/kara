@@ -20,7 +20,7 @@ class LogFile : noncopyable {
 
   void append(const char* logline, int len);
   void flush();
-  bool rollFile();  // 日志回滚 TODO
+  // bool rollFile();  // 日志滚动 TODO
 
  private:
   void append_unlocked(const char* logline, int len);

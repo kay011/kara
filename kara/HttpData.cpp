@@ -17,7 +17,7 @@
 using namespace std;
 
 pthread_once_t MimeType::once_control = PTHREAD_ONCE_INIT;
-std::unordered_map<std::string, std::string> MimeType::mime;
+unordered_map<string, string> MimeType::mime;
 
 const __uint32_t DEFAULT_EVENT = EPOLLIN | EPOLLET | EPOLLONESHOT;
 const int DEFAULT_EXPIRED_TIME = 2000;              // ms
@@ -125,12 +125,11 @@ HttpData::HttpData(EventLoop *loop, int connfd)
       state_(STATE_PARSE_URI),
       hState_(H_START),
       keepAlive_(false) {
-  // loop_->queueInLoop(bind(&HttpData::setHandlers, this));
   channel_->setReadHandler(bind(&HttpData::handleRead, this));
   channel_->setWriteHandler(bind(&HttpData::handleWrite, this));
   channel_->setConnHandler(bind(&HttpData::handleConn, this));
 }
-
+// 可以理解为HttpData的重置函数
 void HttpData::reset() {
   // inBuffer_.clear();
   fileName_.clear();
@@ -140,11 +139,7 @@ void HttpData::reset() {
   hState_ = H_START;
   headers_.clear();
   // keepAlive_ = false;
-  if (timer_.lock()) {
-    shared_ptr<TimerNode> my_timer(timer_.lock());
-    my_timer->clearReq();
-    timer_.reset();
-  }
+  seperateTimer();
 }
 
 void HttpData::seperateTimer() {
@@ -178,7 +173,7 @@ void HttpData::handleRead() {
     //     error_ = true;
     //     break;
     // }
-    else if (zero) {
+    else if (zero) {  // zero表示没有读取到数据
       // 有请求出现但是读不到数据，可能是Request
       // Aborted，或者来自网络的数据没有达到等原因
       // 最可能是对端已经关闭了，统一按照对端已经关闭处理
@@ -190,7 +185,7 @@ void HttpData::handleRead() {
       }
       // cout << "readnum == 0" << endl;
     }
-
+    // 首先处理URI
     if (state_ == STATE_PARSE_URI) {
       URIState flag = this->parseURI();
       if (flag == PARSE_URI_AGAIN)
@@ -249,11 +244,13 @@ void HttpData::handleRead() {
   } while (false);
   // cout << "state_=" << state_ << endl;
   if (!error_) {
+    // 读完之后，根据读的内容处理写
     if (outBuffer_.size() > 0) {
       handleWrite();
       // events_ |= EPOLLOUT;
     }
     // error_ may change
+    // 写也可能出现错误？
     if (!error_ && state_ == STATE_FINISH) {
       this->reset();
       if (inBuffer_.size() > 0) {
@@ -273,7 +270,7 @@ void HttpData::handleRead() {
 
 void HttpData::handleWrite() {
   if (!error_ && connectionState_ != H_DISCONNECTED) {
-    __uint32_t &events_ = channel_->getEvents();
+    __uint32_t &events_ = channel_->getEvents(); // 注意这里取得是引用
     if (writen(fd_, outBuffer_) < 0) {
       perror("writen");
       events_ = 0;
@@ -287,6 +284,7 @@ void HttpData::handleConn() {
   seperateTimer();
   __uint32_t &events_ = channel_->getEvents();
   if (!error_ && connectionState_ == H_CONNECTED) {
+    // 不等于0说明是 新连接
     if (events_ != 0) {
       int timeout = DEFAULT_EXPIRED_TIME;
       if (keepAlive_) timeout = DEFAULT_KEEP_ALIVE_TIME;
@@ -304,6 +302,7 @@ void HttpData::handleConn() {
       int timeout = DEFAULT_KEEP_ALIVE_TIME;
       loop_->updatePoller(channel_, timeout);
     } else {
+      // 短连接？？
       // cout << "close normally" << endl;
       // loop_->shutdown(channel_);
       // loop_->runInLoop(bind(&HttpData::handleClose, shared_from_this()));
@@ -317,12 +316,14 @@ void HttpData::handleConn() {
     events_ = (EPOLLOUT | EPOLLET);
   } else {
     // cout << "close with errors" << endl;
+    // 这里用了runInLoop
+    // 遇到错误直接关闭
     loop_->runInLoop(bind(&HttpData::handleClose, shared_from_this()));
   }
 }
-
+// 解析URI，如:
 URIState HttpData::parseURI() {
-  string &str = inBuffer_;
+  string &str = inBuffer_;  // inBuffer_里存放的是读取的数据
   string cop = str;
   // 读到完整的请求行再开始解析请求
   size_t pos = str.find('\r', nowReadPos_);
@@ -398,6 +399,7 @@ URIState HttpData::parseURI() {
   return PARSE_URI_SUCCESS;
 }
 
+// 解析头部信息
 HeaderState HttpData::parseHeaders() {
   string &str = inBuffer_;
   int key_start = -1, key_end = -1, value_start = -1, value_end = -1;
@@ -486,6 +488,10 @@ HeaderState HttpData::parseHeaders() {
   return PARSE_HEADER_AGAIN;
 }
 
+// 解析请求
+// GET
+// POST
+// HEAD
 AnalysisState HttpData::analysisRequest() {
   if (method_ == METHOD_POST) {
     // ------------------------------------------------------
@@ -530,7 +536,9 @@ AnalysisState HttpData::analysisRequest() {
       filetype = MimeType::getMime(fileName_.substr(dot_pos));
 
     // echo test
+    // 测试用
     if (fileName_ == "hello") {
+      // 没有设置头部信息
       outBuffer_ =
           "HTTP/1.1 200 OK\r\nContent-type: text/plain\r\n\r\nHello World";
       return ANALYSIS_SUCCESS;
@@ -538,7 +546,7 @@ AnalysisState HttpData::analysisRequest() {
     if (fileName_ == "favicon.ico") {
       header += "Content-Type: image/png\r\n";
       header += "Content-Length: " + to_string(sizeof favicon) + "\r\n";
-      header += "Server: LinYa's Web Server\r\n";
+      header += "Server: Kara Web Server\r\n";
 
       header += "\r\n";
       outBuffer_ += header;
@@ -546,7 +554,13 @@ AnalysisState HttpData::analysisRequest() {
       ;
       return ANALYSIS_SUCCESS;
     }
-
+    // struct stat 这个结构体用来描述一个linux系统文件系统中的文件属性的结构。
+    // 可以有两种方法获取一个文件的属性
+    // 1. 通过路径
+    // int stat(const char *path, struct stat *struct_stat);
+    // int lstat(const char *path,struct stat *struct_stat);
+    // 2. 通过文件描述符
+    // int fstat(int fdp, struct stat *struct_stat);　　//通过文件描述符获取文件对应的属性。fdp为文件描述符
     struct stat sbuf;
     if (stat(fileName_.c_str(), &sbuf) < 0) {
       header.clear();
@@ -555,11 +569,11 @@ AnalysisState HttpData::analysisRequest() {
     }
     header += "Content-Type: " + filetype + "\r\n";
     header += "Content-Length: " + to_string(sbuf.st_size) + "\r\n";
-    header += "Server: LinYa's Web Server\r\n";
+    header += "Server: Kara Web Server\r\n";
     // 头部结束
     header += "\r\n";
     outBuffer_ += header;
-
+    // 如果只是请求头部，这里就return了
     if (method_ == METHOD_HEAD) return ANALYSIS_SUCCESS;
 
     int src_fd = open(fileName_.c_str(), O_RDONLY, 0);
@@ -568,6 +582,8 @@ AnalysisState HttpData::analysisRequest() {
       handleError(fd_, 404, "Not Found!");
       return ANALYSIS_ERROR;
     }
+    // mmap函数 将一个文件或者其他对象映射进内存。文件被映射到多个页上，如果文件的大小不是所有页的大小之和，
+    // 最后一个页不被使用的空间将会清零。mmap在用户空间映射调用系统中作用很大。
     void *mmapRet = mmap(NULL, sbuf.st_size, PROT_READ, MAP_PRIVATE, src_fd, 0);
     close(src_fd);
     if (mmapRet == (void *)-1) {
@@ -589,16 +605,16 @@ void HttpData::handleError(int fd, int err_num, string short_msg) {
   short_msg = " " + short_msg;
   char send_buff[4096];
   string body_buff, header_buff;
-  body_buff += "<html><title>哎~出错了</title>";
+  body_buff += "<html><title>Error Page</title>";
   body_buff += "<body bgcolor=\"ffffff\">";
   body_buff += to_string(err_num) + short_msg;
-  body_buff += "<hr><em> LinYa's Web Server</em>\n</body></html>";
+  body_buff += "<hr><em> Kara Web Server</em>\n</body></html>";
 
   header_buff += "HTTP/1.1 " + to_string(err_num) + short_msg + "\r\n";
   header_buff += "Content-Type: text/html\r\n";
   header_buff += "Connection: Close\r\n";
   header_buff += "Content-Length: " + to_string(body_buff.size()) + "\r\n";
-  header_buff += "Server: LinYa's Web Server\r\n";
+  header_buff += "Server: Kara Web Server\r\n";
   ;
   header_buff += "\r\n";
   // 错误处理不考虑writen不完的情况

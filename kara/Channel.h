@@ -3,7 +3,7 @@
  * @Email haodong_yuan@163.com
  * @Date: 2020/6/12
  */
-
+// 有点乱，重构下？
 #pragma once
 #include <sys/epoll.h>
 #include <sys/epoll.h>
@@ -16,6 +16,13 @@
 class EventLoop;
 class HttpData;
 
+/**
+ * Channel 的生命周期由其owner class 负责管理，它一般是其他class的直接或间接成员。
+ * Channel相当于一个通道，封装了fd
+ * 每个Channel都属于一个eventLoop
+ * 通过向Channel注册回调函数来处理不同的事件
+ * Channel的成员函数都
+ */ 
 class Channel {
  private:
   typedef std::function<void()> CallBack;
@@ -29,10 +36,6 @@ class Channel {
   std::weak_ptr<HttpData> holder_;
 
  private:
-  int parse_URI();
-  int parse_Headers();
-  int analysisRequest();
-
   CallBack readHandler_;
   CallBack writeHandler_;
   CallBack errorHandler_;
@@ -59,36 +62,15 @@ class Channel {
     errorHandler_ = errorHandler;
   }
   void setConnHandler(CallBack &&connHandler) { connHandler_ = connHandler; }
-
-  void handleEvents() {
-    events_ = 0;
-    if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
-      events_ = 0;
-      return;
-    }
-    if (revents_ & EPOLLERR) {
-      if (errorHandler_) errorHandler_();
-      events_ = 0;
-      return;
-    }
-    if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
-      handleRead();
-    }
-    if (revents_ & EPOLLOUT) {
-      handleWrite();
-    }
-    handleConn();
-  }
-  void handleRead();
-  void handleWrite();
-  void handleError(int fd, int err_num, std::string short_msg);
-  void handleConn();
+  // 核心 功能是根据revents的值分别调用不同的用户回调。
+  void handleEvents(); // 被EventLoop::loop()调用
 
   void setRevents(__uint32_t ev) { revents_ = ev; }
 
   void setEvents(__uint32_t ev) { events_ = ev; }
   __uint32_t &getEvents() { return events_; }
-
+  // lastEvents是否和events相等
+  // 更新lastEvents
   bool EqualAndUpdateLastEvents() {
     bool ret = (lastEvents_ == events_);
     lastEvents_ = events_;
@@ -97,5 +79,5 @@ class Channel {
 
   __uint32_t getLastEvents() { return lastEvents_; }
 };
-
+// 是要被别的class调用的
 typedef std::shared_ptr<Channel> SP_Channel;

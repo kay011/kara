@@ -24,19 +24,27 @@ Channel::Channel(EventLoop *loop, int fd)
 int Channel::getFd() { return fd_; }
 void Channel::setFd(int fd) { fd_ = fd; }
 
-void Channel::handleRead() {
-  if (readHandler_) {
-    readHandler_();
+void Channel::handleEvents() {
+  events_ = 0;  // 置零操作
+  if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
+    events_ = 0;
+    return;
   }
-}
-
-void Channel::handleWrite() {
-  if (writeHandler_) {
-    writeHandler_();
+  if (revents_ & EPOLLERR) {
+    if (errorHandler_) errorHandler_();
+    events_ = 0;
+    return;
   }
-}
-
-void Channel::handleConn() {
+  if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
+    if (readHandler_) {
+      readHandler_();
+    }
+  }
+  if (revents_ & EPOLLOUT) {
+    if (writeHandler_) {
+      writeHandler_();
+    }
+  }
   if (connHandler_) {
     connHandler_();
   }

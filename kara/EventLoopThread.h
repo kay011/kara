@@ -10,7 +10,7 @@
 #include "base/MutexLock.h"
 #include "base/Thread.h"
 #include "base/noncopyable.h"
-
+// 在Thread线程中传入 EventLoop特有的ThreadFunc()
 class EventLoopThread : noncopyable {
  public:
   EventLoopThread();
@@ -22,6 +22,6 @@ class EventLoopThread : noncopyable {
   EventLoop *loop_;
   bool exiting_;
   Thread thread_;
-  MutexLock mutex_;
+  MutexLock mutex_;  
   Condition cond_;
 };

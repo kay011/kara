@@ -3,7 +3,8 @@
  * @Email haodong_yuan@163.com
  * @Date: 2020/6/12
  */
-
+// 相当于muduo中的TcpConnection
+// 里面包含有Channel
 #pragma once
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -17,7 +18,8 @@
 class EventLoop;
 class TimerNode;
 class Channel;
-
+// 多个状态机
+// 处理对应的多种状态
 enum ProcessState {
   STATE_PARSE_URI = 1,
   STATE_PARSE_HEADERS,
@@ -25,13 +27,13 @@ enum ProcessState {
   STATE_ANALYSIS,
   STATE_FINISH
 };
-
+// URI 对应的状态
 enum URIState {
   PARSE_URI_AGAIN = 1,
   PARSE_URI_ERROR,
   PARSE_URI_SUCCESS,
 };
-
+// 请求头对应的状态
 enum HeaderState {
   PARSE_HEADER_SUCCESS = 1,
   PARSE_HEADER_AGAIN,
@@ -40,6 +42,7 @@ enum HeaderState {
 
 enum AnalysisState { ANALYSIS_SUCCESS = 1, ANALYSIS_ERROR };
 
+// 解析首部对应的状态
 enum ParseState {
   H_START = 0,
   H_KEY,
@@ -51,7 +54,7 @@ enum ParseState {
   H_END_CR,
   H_END_LF
 };
-
+// 连接状态: 断开连接，半连接，全连接
 enum ConnectionState { H_CONNECTED = 0, H_DISCONNECTING, H_DISCONNECTED };
 
 enum HttpMethod { METHOD_POST = 1, METHOD_GET, METHOD_HEAD };
@@ -62,8 +65,8 @@ class MimeType {
  private:
   static void init();
   static std::unordered_map<std::string, std::string> mime;
-  MimeType();
-  MimeType(const MimeType &m);
+  MimeType();                   // 有啥用
+  MimeType(const MimeType &m);  // 拷贝构造  有啥用？
 
  public:
   static std::string getMime(const std::string &suffix);
@@ -84,15 +87,15 @@ class HttpData : public std::enable_shared_from_this<HttpData> {
   }
   std::shared_ptr<Channel> getChannel() { return channel_; }
   EventLoop *getLoop() { return loop_; }
-  void handleClose();
-  void newEvent();
+  void handleClose(); // 关闭HTTP连接
+  void newEvent();   // 处理新事件
 
  private:
   EventLoop *loop_;
-  std::shared_ptr<Channel> channel_;
-  int fd_;
-  std::string inBuffer_;
-  std::string outBuffer_;
+  std::shared_ptr<Channel> channel_;  // 使用传进来的loop构造Channel
+  int fd_;    // 只要有fd, 就有对应的Channel
+  std::string inBuffer_;   // 用的string 输入缓冲区
+  std::string outBuffer_;  // 输出缓冲区
   bool error_;
   ConnectionState connectionState_;
 
@@ -103,14 +106,15 @@ class HttpData : public std::enable_shared_from_this<HttpData> {
   int nowReadPos_;
   ProcessState state_;
   ParseState hState_;
-  bool keepAlive_;
+  bool keepAlive_;           // 长短连接
   std::map<std::string, std::string> headers_;
-  std::weak_ptr<TimerNode> timer_;
+  std::weak_ptr<TimerNode> timer_;  // 存放一个定时器节点
 
   void handleRead();
   void handleWrite();
   void handleConn();
   void handleError(int fd, int err_num, std::string short_msg);
+
   URIState parseURI();
   HeaderState parseHeaders();
   AnalysisState analysisRequest();

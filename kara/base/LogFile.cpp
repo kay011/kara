@@ -34,7 +34,7 @@ void LogFile::flush() {
 }
 
 void LogFile::append_unlocked(const char* logline, int len) {
-  file_->append(logline, len);
+  file_->append(logline, len);  // 非线程安全
   ++count_;
   if (count_ >= flushEveryN_) {
     count_ = 0;

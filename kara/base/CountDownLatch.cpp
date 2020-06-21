@@ -10,9 +10,9 @@ CountDownLatch::CountDownLatch(int count)
     : mutex_(), condition_(mutex_), count_(count) {}
 
 void CountDownLatch::wait() {
-  MutexLockGuard lock(mutex_);
+  MutexLockGuard lock(mutex_);  // 确保wait之前 上锁
   while (count_ > 0) {
-    condition_.wait();
+    condition_.wait();  // 线程等待
   }
 }
 

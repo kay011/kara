@@ -41,6 +41,8 @@ void CurrentThread::cacheTid() {
   }
 }
 
+// 线程参数，放入 pthread_create中 第四个参数
+// 运行函数的参数
 struct ThreadData {
   typedef Thread::ThreadFunc ThreadFunc;
   ThreadFunc func_;
@@ -55,12 +57,12 @@ struct ThreadData {
 
   void runInThread() {
     *tid_ = CurrentThread::tid();
-    tid_ = NULL;
-    latch_->countDown();
-    latch_ = NULL;
+    tid_ = NULL;   // 指针指向空
+    latch_->countDown();  // 这里进行了countDown
+    latch_ = NULL;        // 指针指向空
 
     CurrentThread::t_threadName = name_.empty() ? "Thread" : name_.c_str();
-    prctl(PR_SET_NAME, CurrentThread::t_threadName);
+    prctl(PR_SET_NAME, CurrentThread::t_threadName);  // 设置进程名
 
     func_();  // 线程执行函数
 
@@ -110,9 +112,12 @@ void Thread::start() {
   // 等待到被等待的线程结束为止，当函数返回时，被等待线程的资源被收回。
   // 如果执行成功则返回0， 如果失败则返回一个错误号。
   if (pthread_create(&pthreadId_, NULL, &startThread, data)) {
+    // 启动失败，释放资源
     started_ = false;
     delete data;
   } else {
+    // 启动成功
+    // latch_.wait() 保证 runInThread 真的被启动了才 退出start()
     latch_.wait();
     assert(tid_ > 0);
   }
