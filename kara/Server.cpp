@@ -20,8 +20,12 @@ Server::Server(EventLoop *loop, int threadNum, int port)
       acceptChannel_(new Channel(loop_)),
       port_(port),
       listenFd_(socket_bind_listen(port_)) {
+  // 构造函数
+  // 将listenFd_ 绑定到accpetChannel_
   acceptChannel_->setFd(listenFd_);
   handle_for_sigpipe();
+  // 将listenFd 设为非阻塞
+  // 为什么 因为listenFd_ 也要交给Epoll管理
   if (setSocketNonBlocking(listenFd_) < 0) {
     perror("set socket non block failed");
     abort();
@@ -49,6 +53,8 @@ void Server::handNewConn() {
   memset(&client_addr, 0, sizeof(struct sockaddr_in));
   socklen_t client_addr_len = sizeof(client_addr);
   int connect_fd = 0;
+  // ET模式
+  // ET模式下，由于listenFd_ 是非阻塞的，所有要while循环
   while ((connect_fd = accept(listenFd_, (struct sockaddr *)&client_addr,
                              &client_addr_len)) > 0) {
     EventLoop *loop = eventLoopThreadPool_->getNextLoop();

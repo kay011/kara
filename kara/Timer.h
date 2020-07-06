@@ -34,7 +34,7 @@ class TimerNode {
   // 
   std::shared_ptr<HttpData> SPHttpData;
 };
-
+// 小根堆
 struct TimerCmp {
   bool operator()(std::shared_ptr<TimerNode> &a,
                   std::shared_ptr<TimerNode> &b) const {

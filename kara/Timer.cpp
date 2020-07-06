@@ -28,6 +28,7 @@ TimerNode::TimerNode(std::shared_ptr<HttpData> requestData, int timeout)
 }
 
 TimerNode::~TimerNode() {
+  // 当从定时器堆中删除结点元素后，关闭http连接
   if (SPHttpData) SPHttpData->handleClose();
 }
 
@@ -74,7 +75,7 @@ void TimerManager::addTimer(std::shared_ptr<HttpData> SPHttpData, int timeout) {
 因为(1) 优先队列不支持随机访问
 (2) 即使支持，随机删除某节点后破坏了堆的结构，需要重新更新堆结构。
 所以对于被置为deleted的时间节点，会延迟到它(1)超时 或
-设置为deleted意味着它可以被删除了，但不一定会立即被删除
+设置为deleted意味着它可以被删除了，但不一定会立即被删除，只是将它标记为可以被删除了
 (2)它前面的节点都被删除时，它才会被删除。
 一个点被置为deleted,它最迟会在TIMER_TIME_OUT时间后被删除。
 这样做有两个好处：

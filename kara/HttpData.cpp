@@ -125,6 +125,7 @@ HttpData::HttpData(EventLoop *loop, int connfd)
       state_(STATE_PARSE_URI),
       hState_(H_START),
       keepAlive_(false) {
+  // 构造函数就注册好了回调
   channel_->setReadHandler(bind(&HttpData::handleRead, this));
   channel_->setWriteHandler(bind(&HttpData::handleWrite, this));
   channel_->setConnHandler(bind(&HttpData::handleConn, this));
@@ -584,6 +585,8 @@ AnalysisState HttpData::analysisRequest() {
     }
     // mmap函数 将一个文件或者其他对象映射进内存。文件被映射到多个页上，如果文件的大小不是所有页的大小之和，
     // 最后一个页不被使用的空间将会清零。mmap在用户空间映射调用系统中作用很大。
+    // void* mmap(void *start, size_t length, int prot, int flags, int fd, offset_t offset);
+    // start设为NULL，系统自动分配一个地址
     void *mmapRet = mmap(NULL, sbuf.st_size, PROT_READ, MAP_PRIVATE, src_fd, 0);
     close(src_fd);
     if (mmapRet == (void *)-1) {

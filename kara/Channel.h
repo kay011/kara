@@ -39,7 +39,7 @@ class Channel {
   CallBack readHandler_;
   CallBack writeHandler_;
   CallBack errorHandler_;
-  CallBack connHandler_;
+  CallBack connHandler_;  // 专门为listenfd设置的吗
 
  public:
   Channel(EventLoop *loop);

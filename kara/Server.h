@@ -25,13 +25,13 @@ class Server {
   void handThisConn() { loop_->updatePoller(acceptChannel_); }
 
  private:
-  EventLoop *loop_;
+  EventLoop *loop_;  // 持有一个mianLoop线程
   int threadNum_;
   // 持有一个线程池里面的线程都是跑着EventLoop，等待着注入回调
   std::unique_ptr<EventLoopThreadPool> eventLoopThreadPool_;
   bool started_;
   // 持有一个acceptChannel
-  std::shared_ptr<Channel> acceptChannel_;
+  std::shared_ptr<Channel> acceptChannel_;  // 持有一个accpetChannel
   int port_;
   int listenFd_;
   static const int MAXFDS = 100000;

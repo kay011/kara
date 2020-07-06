@@ -46,6 +46,7 @@ ssize_t readn(int fd, std::string &inBuffer, bool &zero) {
     char buff[MAX_BUFF];
     // 因为read()是会阻塞的系统调用
     // 返回值nread 是实际读入的字节数
+    // 非阻塞读
     if ((nread = read(fd, buff, MAX_BUFF)) < 0) {
       if (errno == EINTR)  // 系统调用被终端
         continue;
@@ -149,11 +150,15 @@ ssize_t writen(int fd, std::string &sbuff) {
     sbuff = sbuff.substr(writeSum);
   return writeSum;
 }
-
+/**
+ * 建立连接，若某一段关闭连接，而另一端仍然向他写数据，第一次向它数据
+ * 会收到RST响应，此后再写数据，内核将向进程发出SIGPIPE信号，通知进程此链接已经断开。
+ * 而SIGPIPE信号的默认处理是终止程序，导致上述问题的发生
+ */ 
 void handle_for_sigpipe() {
   struct sigaction sa;
   memset(&sa, '\0', sizeof(sa));
-  sa.sa_handler = SIG_IGN;
+  sa.sa_handler = SIG_IGN;  // 忽略SIGPIPE信号
   sa.sa_flags = 0;
   if (sigaction(SIGPIPE, &sa, NULL)) return;
 }
@@ -178,7 +183,7 @@ void setSocketNodelay(int fd) {
 // 如果设置了SO_LINGER选项，并且等待时间为正值，则在清理之前会等待一段时间。
 // 三种情况 
 // l_onoff=0， 选项关闭
-// l_onoff为非0， l_linger为0， 避免了TIME_WAIT状态
+// l_onoff为非0， l_linger为0， 避免了TIME_WAIT状态，发送复位RST报文
 // l_onoff为非0， l_linger为非0， 
 // 当套接口关闭时内核将拖延一段时间（由l_linger决定）。
 // 优雅关闭TCP连接

@@ -32,7 +32,7 @@ EventLoop *EventLoopThread::startLoop() {
   }
   return loop_;
 }
-
+//  线程注册的回调就是跑一个loop
 void EventLoopThread::threadFunc() {
   EventLoop loop;
 

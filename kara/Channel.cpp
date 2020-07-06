@@ -45,6 +45,7 @@ void Channel::handleEvents() {
       writeHandler_();
     }
   }
+  // 处理完读或写后 还要处理连接，针对mainReactor来说
   if (connHandler_) {
     connHandler_();
   }

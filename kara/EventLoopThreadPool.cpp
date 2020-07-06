@@ -18,8 +18,10 @@ void EventLoopThreadPool::start() {
   baseLoop_->assertInLoopThread();
   started_ = true;
   for (int i = 0; i < numThreads_; ++i) {
+    // 往vector中加线程
     std::shared_ptr<EventLoopThread> t(new EventLoopThread());
     threads_.push_back(t);
+    // 然后每个线程启动StartLoop
     loops_.push_back(t->startLoop());
   }
 }

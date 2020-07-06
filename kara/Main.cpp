@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
     }
   }
   Logger::setLogFileName(logPath);
+  // mianloop没有放到线程池中
   EventLoop mainLoop;
   Server myHTTPServer(&mainLoop, threadNum, port);
   myHTTPServer.start();
