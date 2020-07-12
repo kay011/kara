@@ -156,6 +156,7 @@ void HttpData::handleRead() {
   __uint32_t &events_ = channel_->getEvents();
   do {
     bool zero = false;
+    // 应用层缓冲区 inBuffer_
     int read_num = readn(fd_, inBuffer_, zero);
     LOG << "Request: " << inBuffer_;
     if (connectionState_ == H_DISCONNECTING) {
@@ -269,14 +270,18 @@ void HttpData::handleRead() {
   }
 }
 
+// 首先看处理写逻辑
+// 如果没有error，并且连接状态是连接
 void HttpData::handleWrite() {
   if (!error_ && connectionState_ != H_DISCONNECTED) {
     __uint32_t &events_ = channel_->getEvents(); // 注意这里取得是引用
+    // 往fd里写数据
     if (writen(fd_, outBuffer_) < 0) {
       perror("writen");
       events_ = 0;
       error_ = true;
     }
+    // 事件变为可写
     if (outBuffer_.size() > 0) events_ |= EPOLLOUT;
   }
 }

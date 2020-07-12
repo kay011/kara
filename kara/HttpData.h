@@ -120,9 +120,9 @@ class HttpData : public std::enable_shared_from_this<HttpData> {
   std::map<std::string, std::string> headers_;
   std::weak_ptr<TimerNode> timer_;  // 存放一个定时器节点
 
-  void handleRead();
-  void handleWrite();
-  void handleConn();
+  void handleRead();  // 接收请求，处理请求
+  void handleWrite(); // 往socket写数据
+  void handleConn();  // 处理连接
   void handleError(int fd, int err_num, std::string short_msg);
 
   URIState parseURI();
