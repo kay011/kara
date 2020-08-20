@@ -29,7 +29,7 @@ class TimerNode {
   size_t getExpTime() const { return expiredTime_; }
 
  private:
-  bool deleted_;
+  bool deleted_; // 垃圾回收中的标记清除法
   size_t expiredTime_;
   // 
   std::shared_ptr<HttpData> SPHttpData;

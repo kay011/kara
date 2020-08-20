@@ -4,3 +4,5 @@
 因此我们可以看到 在Server类中有listenfd， 就要有对应的acceptChannel, 然后为accpetChanel绑定响应的回调 Server::handNewConn和Server::handThisConn
 在EventLoop类中有eventfd，就要有对应的pwakeUpChannel，然后绑定相应的EventLoop::handleRead和EventLoop::handleConn
 
+你会发现在实际编程中 处理业务的部门都叫做Channel
+
