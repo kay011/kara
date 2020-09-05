@@ -66,8 +66,8 @@ class MimeType {
   static void init();
   // 考虑换成map
   static std::unordered_map<std::string, std::string> mime;
-  MimeType();                   // 有啥用
-  MimeType(const MimeType &m);  // 拷贝构造  有啥用？
+  MimeType();                   
+  MimeType(const MimeType &m);  
 
  public:
   static std::string getMime(const std::string &suffix);

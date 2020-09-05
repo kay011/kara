@@ -170,11 +170,6 @@ void HttpData::handleRead() {
       handleError(fd_, 400, "Bad Request");
       break;
     }
-    // else if (read_num == 0)
-    // {
-    //     error_ = true;
-    //     break;
-    // }
     else if (zero) {  // zero表示没有读取到数据
       // 有请求出现但是读不到数据，可能是Request
       // Aborted，或者来自网络的数据没有达到等原因
@@ -244,7 +239,6 @@ void HttpData::handleRead() {
       }
     }
   } while (false);
-  // cout << "state_=" << state_ << endl;
   if (!error_) {
     // 读完之后，根据读的内容处理写
     if (outBuffer_.size() > 0) {
@@ -252,7 +246,7 @@ void HttpData::handleRead() {
       // events_ |= EPOLLOUT;
     }
     // error_ may change
-    // 写也可能出现错误？
+    // 写也可能出现错误
     if (!error_ && state_ == STATE_FINISH) {
       this->reset();
       if (inBuffer_.size() > 0) {
@@ -267,6 +261,9 @@ void HttpData::handleRead() {
       // }
     } else if (!error_ && connectionState_ != H_DISCONNECTED)
       events_ |= EPOLLIN;
+  }
+  else{
+    
   }
 }
 
@@ -308,12 +305,12 @@ void HttpData::handleConn() {
       int timeout = DEFAULT_KEEP_ALIVE_TIME;
       loop_->updatePoller(channel_, timeout);
     } else {
-      // 短连接？？
+      // 短连接
       // cout << "close normally" << endl;
       // loop_->shutdown(channel_);
       // loop_->runInLoop(bind(&HttpData::handleClose, shared_from_this()));
       events_ |= (EPOLLIN | EPOLLET);
-      // events_ |= (EPOLLIN | EPOLLET | EPOLLONESHOT);
+      events_ |= (EPOLLIN | EPOLLET | EPOLLONESHOT);
       int timeout = (DEFAULT_KEEP_ALIVE_TIME >> 1);
       loop_->updatePoller(channel_, timeout);
     }
@@ -500,30 +497,7 @@ HeaderState HttpData::parseHeaders() {
 // HEAD
 AnalysisState HttpData::analysisRequest() {
   if (method_ == METHOD_POST) {
-    // ------------------------------------------------------
-    // My CV stitching handler which requires OpenCV library
-    // ------------------------------------------------------
-    // string header;
-    // header += string("HTTP/1.1 200 OK\r\n");
-    // if(headers_.find("Connection") != headers_.end() &&
-    // headers_["Connection"] == "Keep-Alive")
-    // {
-    //     keepAlive_ = true;
-    //     header += string("Connection: Keep-Alive\r\n") + "Keep-Alive:
-    //     timeout=" + to_string(DEFAULT_KEEP_ALIVE_TIME) + "\r\n";
-    // }
-    // int length = stoi(headers_["Content-length"]);
-    // vector<char> data(inBuffer_.begin(), inBuffer_.begin() + length);
-    // Mat src = imdecode(data, CV_LOAD_IMAGE_ANYDEPTH|CV_LOAD_IMAGE_ANYCOLOR);
-    // //imwrite("receive.bmp", src);
-    // Mat res = stitch(src);
-    // vector<uchar> data_encode;
-    // imencode(".png", res, data_encode);
-    // header += string("Content-length: ") + to_string(data_encode.size()) +
-    // "\r\n\r\n";
-    // outBuffer_ += header + string(data_encode.begin(), data_encode.end());
-    // inBuffer_ = inBuffer_.substr(length);
-    // return ANALYSIS_SUCCESS;
+    // TODO
   } else if (method_ == METHOD_GET || method_ == METHOD_HEAD) {
     string header;
     header += "HTTP/1.1 200 OK\r\n";

@@ -49,13 +49,13 @@ private:
   int wakeupFd_;   // 一个EventLoop放一个fd eventfd
   bool quit_;
   bool eventHandling_;
-  mutable MutexLock mutex_;  // 互斥锁 锁什么，锁 pendingFunctors_
+  mutable MutexLock mutex_;  // 互斥锁,锁 pendingFunctors_
   std::vector<Functor> pendingFunctors_; // 每个EventLoop有自己的工作队列，这里时需要加锁的
   bool callingPendingFunctors_;
   const pid_t threadId_;
   SP_Channel pwakeupChannel_; // 每个Channel对象自始至终只属于一个EventLoop
 
-  void wakeup();  // 唤醒什么
+  void wakeup();  // 唤醒
   void handleRead();
   void doPendingFunctors();
   void handleConn();

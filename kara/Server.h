@@ -35,5 +35,5 @@ class Server {
   std::shared_ptr<Channel> acceptChannel_;  // 持有一个accpetChannel
   int port_;
   int listenFd_;
-  static const int MAXFDS = 100000;
+  static const int MAXFDS = 10000;
 };
